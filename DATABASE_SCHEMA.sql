@@ -1,3 +1,5 @@
+Viết tiếp từ đây: - Dưới đây là FILE SỐ 2: DATABASE_SCHEMA.sql cho DEV, viết theo hướng production-ready, ưu tiên multi-tenant, audit, compliance, source lineage, workflow, billing, AI scoring.
+
 -- FILE: DATABASE_SCHEMA.sql
 -- CUSTOMER INTELLIGENCE OS
 -- PostgreSQL Production Schema
@@ -805,7 +807,7 @@ CREATE TABLE IF NOT EXISTS legal_basis_records (
   legal_basis legal_basis_tag NOT NULL,
   justification TEXT,
   jurisdiction VARCHAR(64),
-  review_status review_status NOT NULL DEFAULT 'approved',
+  review_status review_status NOT NULL DEFAULT 'approved  review_status review_status NOT NULL DEFAULT 'approved',
   reviewed_by UUID REFERENCES users(id),
   reviewed_at TIMESTAMPTZ,
   metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -1034,6 +1036,118 @@ CREATE TABLE IF NOT EXISTS security_events (
 );
 
 -- =========================================================
+-- SEARCH / SAVED VIEWS / FILTERS
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS saved_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  owner_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  entity_type entity_type NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  filters_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  columns_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  sort_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_shared BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_views_workspace_owner ON saved_views(workspace_id, owner_user_id);
+
+-- =========================================================
+-- FEATURE FLAGS / SETTINGS / CONNECTORS
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS feature_flags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
+  code VARCHAR(128) NOT NULL,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  rules_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (workspace_id, code)
+);
+
+CREATE TABLE IF NOT EXISTS connectors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  connector_type VARCHAR(64) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  status VARCHAR(32) NOT NULL DEFAULT 'active',
+  config_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  secret_ref VARCHAR(255),
+  last_sync_at TIMESTAMPTZ,
+  last_error TEXT,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_connectors_workspace_type ON connectors(workspace_id, connector_type);
+
+-- =========================================================
+-- OUTREACH GOVERNANCE
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS outreach_policies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  channel VARCHAR(32) NOT NULL,
+  require_consent BOOLEAN NOT NULL DEFAULT FALSE,
+  require_manual_review BOOLEAN NOT NULL DEFAULT TRUE,
+  max_messages_per_day INTEGER NOT NULL DEFAULT 100,
+  allowed_legal_basis_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  settings_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS outreach_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  outreach_policy_id UUID REFERENCES outreach_policies(id) ON DELETE SET NULL,
+  workflow_run_id UUID REFERENCES workflow_runs(id) ON DELETE SET NULL,
+  channel VARCHAR(32) NOT NULL,
+  target_entity_type entity_type,
+  target_entity_id UUID,
+  status VARCHAR(32) NOT NULL DEFAULT 'queued',
+  compliance_passed BOOLEAN NOT NULL DEFAULT FALSE,
+  suppression_checked BOOLEAN NOT NULL DEFAULT FALSE,
+  sent_at TIMESTAMPTZ,
+  last_error TEXT,
+  payload_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_outreach_runs_workspace_status ON outreach_runs(workspace_id, status);
+
+-- =========================================================
+-- MATERIALIZED SUPPORT TABLES
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS organization_daily_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  metric_date DATE NOT NULL,
+  signal_count INTEGER NOT NULL DEFAULT 0,
+  average_signal_strength NUMERIC(5,2),
+  latest_priority_score NUMERIC(5,2),
+  latest_freshness_score NUMERIC(5,2),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (workspace_id, organization_id, metric_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_daily_metrics_date ON organization_daily_metrics(workspace_id, metric_date);
+
+-- =========================================================
 -- TRIGGERS
 -- =========================================================
 
@@ -1050,6 +1164,11 @@ FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 DROP TRIGGER IF EXISTS trg_workspace_members_updated_at ON workspace_members;
 CREATE TRIGGER trg_workspace_members_updated_at
 BEFORE UPDATE ON workspace_members
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_roles_updated_at ON roles;
+CREATE TRIGGER trg_roles_updated_at
+BEFORE UPDATE ON roles
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 DROP TRIGGER IF EXISTS trg_plans_updated_at ON plans;
@@ -1132,6 +1251,26 @@ CREATE TRIGGER trg_webhooks_updated_at
 BEFORE UPDATE ON webhooks
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS trg_saved_views_updated_at ON saved_views;
+CREATE TRIGGER trg_saved_views_updated_at
+BEFORE UPDATE ON saved_views
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_feature_flags_updated_at ON feature_flags;
+CREATE TRIGGER trg_feature_flags_updated_at
+BEFORE UPDATE ON feature_flags
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_connectors_updated_at ON connectors;
+CREATE TRIGGER trg_connectors_updated_at
+BEFORE UPDATE ON connectors
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS trg_outreach_policies_updated_at ON outreach_policies;
+CREATE TRIGGER trg_outreach_policies_updated_at
+BEFORE UPDATE ON outreach_policies
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
 -- =========================================================
 -- SEED: PLANS
 -- =========================================================
@@ -1164,415 +1303,47 @@ VALUES
   ('task.edit', 'Edit tasks', 'Can edit tasks'),
   ('workflow.view', 'View workflows', 'Can view workflows'),
   ('workflow.edit', 'Edit workflows', 'Can edit workflows'),
-  ('compliance
-  -- FILE: DATABASE_SCHEMA.sql
--- CUSTOMER INTELLIGENCE OS
--- PostgreSQL Production Schema (Multi-tenant, Compliance-first)
-
--- ==================================================
--- EXTENSIONS
--- ==================================================
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- ==================================================
--- CORE: WORKSPACES / TENANT
--- ==================================================
-
-CREATE TABLE workspaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
-    plan TEXT NOT NULL DEFAULT 'free',
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE workspace_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    user_id UUID NOT NULL,
-    role TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- ORGANIZATIONS
--- ==================================================
-
-CREATE TABLE organizations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    legal_name TEXT,
-    brand_name TEXT,
-    normalized_name TEXT,
-
-    primary_domain TEXT,
-    secondary_domains TEXT[],
-
-    industry TEXT,
-    subindustry TEXT,
-
-    country TEXT,
-    city TEXT,
-    public_address TEXT,
-
-    company_size_estimate TEXT,
-    employee_range TEXT,
-
-    company_summary TEXT,
-
-    public_contact_email TEXT,
-    public_contact_phone TEXT,
-
-    linkedin_url TEXT,
-    facebook_url TEXT,
-    youtube_url TEXT,
-
-    source_confidence FLOAT,
-    freshness_score FLOAT,
-
-    legal_basis_tag TEXT,
-    retention_class TEXT,
-
-    is_deleted BOOLEAN DEFAULT FALSE,
-
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_org_workspace ON organizations(workspace_id);
-CREATE INDEX idx_org_domain ON organizations(primary_domain);
-
--- ==================================================
--- CONTACTS
--- ==================================================
-
-CREATE TABLE contacts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    organization_id UUID REFERENCES organizations(id),
-
-    full_name TEXT,
-    role_title TEXT,
-
-    public_business_email TEXT,
-    public_business_phone TEXT,
-
-    linkedin_public_url TEXT,
-
-    source_url TEXT,
-    source_visibility TEXT,
-
-    contactability_class TEXT,
-
-    do_not_contact BOOLEAN DEFAULT FALSE,
-    suppression_reason TEXT,
-
-    legal_basis_tag TEXT,
-    retention_expires_at TIMESTAMP,
-
-    is_deleted BOOLEAN DEFAULT FALSE,
-
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_contact_org ON contacts(organization_id);
-
--- ==================================================
--- LEADS
--- ==================================================
-
-CREATE TABLE leads (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    organization_id UUID REFERENCES organizations(id),
-    contact_id UUID REFERENCES contacts(id),
-
-    status TEXT,
-    owner_id UUID,
-
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- PIPELINES
--- ==================================================
-
-CREATE TABLE pipelines (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    name TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE pipeline_stages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    pipeline_id UUID REFERENCES pipelines(id),
-    name TEXT,
-    position INT
-);
-
-CREATE TABLE opportunities (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    lead_id UUID REFERENCES leads(id),
-    stage_id UUID REFERENCES pipeline_stages(id),
-
-    value NUMERIC,
-    close_probability FLOAT,
-
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- ACTIVITIES
--- ==================================================
-
-CREATE TABLE activities (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    lead_id UUID REFERENCES leads(id),
-
-    type TEXT,
-    description TEXT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE tasks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    title TEXT,
-    assigned_to UUID,
-    due_date TIMESTAMP,
-    status TEXT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE notes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    entity_type TEXT,
-    entity_id UUID,
-
-    content TEXT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- SOURCE RECORDS (CỰC QUAN TRỌNG)
--- ==================================================
-
-CREATE TABLE source_records (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    entity_type TEXT,
-    entity_id UUID,
-
-    field_name TEXT,
-    raw_value TEXT,
-    normalized_value TEXT,
-
-    source_url TEXT,
-    source_title TEXT,
-    source_type TEXT,
-
-    first_seen_at TIMESTAMP,
-    last_seen_at TIMESTAMP,
-
-    crawl_job_id UUID,
-
-    proof_hash TEXT,
-
-    robots_status TEXT,
-    confidence FLOAT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_source_entity ON source_records(entity_id);
-
--- ==================================================
--- AI ENRICHMENT
--- ==================================================
-
-CREATE TABLE ai_enrichments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    entity_type TEXT,
-    entity_id UUID,
-
-    summary TEXT,
-    industry TEXT,
-    signals JSONB,
-    recommendations JSONB,
-
-    model_version TEXT,
-    confidence FLOAT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- LEAD SCORING
--- ==================================================
-
-CREATE TABLE lead_scores (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    lead_id UUID REFERENCES leads(id),
-
-    fit_score FLOAT,
-    intent_score FLOAT,
-    timing_score FLOAT,
-    compliance_score FLOAT,
-    priority_score FLOAT,
-
-    explanation TEXT,
-
-    model_version TEXT,
-    generated_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- SIGNAL EVENTS
--- ==================================================
-
-CREATE TABLE signal_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    organization_id UUID REFERENCES organizations(id),
-
-    signal_type TEXT,
-    signal_data JSONB,
-
-    detected_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- CRAWL SYSTEM
--- ==================================================
-
-CREATE TABLE crawl_jobs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    domain TEXT,
-    status TEXT,
-    started_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    error TEXT
-);
-
-CREATE TABLE domain_policies (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    domain TEXT UNIQUE,
-    robots_status TEXT,
-    crawl_allowed BOOLEAN,
-    risk_level TEXT,
-    last_checked TIMESTAMP
-);
-
--- ==================================================
--- COMPLIANCE
--- ==================================================
-
-CREATE TABLE suppression_list (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-    email TEXT,
-    reason TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE deletion_requests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    entity_type TEXT,
-    entity_id UUID,
-
-    status TEXT,
-    requested_at TIMESTAMP DEFAULT NOW(),
-    completed_at TIMESTAMP
-);
-
-CREATE TABLE audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    user_id UUID,
-    action TEXT,
-    entity_type TEXT,
-    entity_id UUID,
-
-    metadata JSONB,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- BILLING
--- ==================================================
-
-CREATE TABLE subscriptions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    plan TEXT,
-    status TEXT,
-
-    started_at TIMESTAMP,
-    expires_at TIMESTAMP
-);
-
-CREATE TABLE usage_counters (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    metric TEXT,
-    value INT DEFAULT 0,
-
-    period_start TIMESTAMP,
-    period_end TIMESTAMP
-);
-
--- ==================================================
--- EXPORT LOGS
--- ==================================================
-
-CREATE TABLE exports (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    user_id UUID,
-    export_type TEXT,
-    record_count INT,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- ==================================================
--- SECURITY EVENTS
--- ==================================================
-
-CREATE TABLE security_events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    workspace_id UUID REFERENCES workspaces(id),
-
-    event_type TEXT,
-    metadata JSONB,
-
-    created_at TIMESTAMP DEFAULT NOW()
-);
+  ('compliance.view', 'View compliance console', 'Can access compliance console'),
+  ('compliance.edit', 'Manage compliance settings', 'Can modify compliance settings'),
+  ('export.request', 'Request export', 'Can request export'),
+  ('export.approve', 'Approve export', 'Can approve exports'),
+  ('audit.view', 'View audit logs', 'Can view audit logs'),
+  ('billing.view', 'View billing', 'Can view billing'),
+  ('billing.edit', 'Edit billing', 'Can modify billing'),
+  ('api_keys.manage', 'Manage API keys', 'Can create or revoke API keys'),
+  ('webhooks.manage', 'Manage webhooks', 'Can create or update webhooks'),
+  ('source_governance.view', 'View source governance', 'Can view source governance'),
+  ('source_governance.edit', 'Manage source governance', 'Can manage source governance'),
+  ('review_queue.view', 'View review queue', 'Can view review queue'),
+  ('review_queue.edit', 'Review queue actions', 'Can approve or reject queue items'),
+  ('settings.manage', 'Manage settings', 'Can manage workspace settings')
+ON CONFLICT (code) DO NOTHING;
+
+-- =========================================================
+-- OPTIONAL SEED: DEFAULT RETENTION RULES
+-- =========================================================
+
+INSERT INTO retention_rules (workspace_id, entity_type, retention_days, purge_mode, applies_to_status, notes, is_active)
+SELECT
+  w.id,
+  t.entity_type,
+  t.retention_days,
+  t.purge_mode,
+  t.applies_to_status,
+  t.notes,
+  TRUE
+FROM workspaces w
+CROSS JOIN (
+  VALUES
+    ('organization'::entity_type, 365, 'soft_then_hard', 'deleted', 'Organizations soft-deleted purge after 365 days'),
+    ('contact'::entity_type, 180, 'soft_then_hard', 'deleted', 'Contacts soft-deleted purge after 180 days'),
+    ('lead'::entity_type, 365, 'soft_then_hard', 'deleted', 'Leads soft-deleted purge after 365 days'),
+    ('opportunity'::entity_type, 730, 'soft_then_hard', 'deleted', 'Opportunities keep longer for revenue audit'),
+    ('source_record'::entity_type, 365, 'hard', NULL, 'Source records kept 365 days unless overridden'),
+    ('export'::entity_type, 90, 'hard', NULL, 'Export metadata kept 90 days'),
+    ('deletion_request'::entity_type, 730, 'hard', NULL, 'Deletion requests retained for compliance history'),
+    ('workflow'::entity_type, 365, NULL, NULL, 'Workflow history managed separately')
+) AS t(entity_type, retention_days, purge_mode, applies_to_status, notes)
+ON CONFLICT (workspace_id, entity_type, applies_to_status) DO NOTHING;
+
+COMMIT;
