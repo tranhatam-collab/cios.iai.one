@@ -57,3 +57,10 @@ Add repository secret **CLOUDFLARE_API_TOKEN** with:
 - Cloudflare API token permissions: **Account** → **Cloudflare Pages** → **Edit** (and any other scopes your org requires for Wrangler).
 
 Without this secret, the deploy job fails until the token is configured.
+
+You can also run the workflow manually: **Actions → CI → Run workflow**.
+
+### Custom domain (gắn khi nào?)
+
+- **Dev / test / CI xanh**: dùng URL có sẵn `https://cios-iai-one.pages.dev` là đủ, **không cần** gắn domain riêng.
+- **Khi cần gắn domain** (ví dụ `cios.iai.one` hoặc `api.*`): khi bạn muốn thương hiệu, DNS riêng, hoặc TLS theo hostname tùy chọn. Lúc đó vào Cloudflare Dashboard → **Workers & Pages** → project **cios-iai-one** → **Custom domains** → thêm zone/DNS theo hướng dẫn. **Báo mình khi bạn chọn tên miền cụ thể** để cấu hình DNS/CNAME đúng (thường CNAME tới `cios-iai-one.pages.dev` hoặc bản ghi Cloudflare chỉ định).

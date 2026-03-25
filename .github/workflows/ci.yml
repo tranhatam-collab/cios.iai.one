@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, dev]
   pull_request:
@@ -56,3 +57,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: 93112cc89181e75335cbd7ef7e392ba3
           command: pages deploy site --project-name=cios-iai-one
+
+      - name: Smoke test (production Pages URL)
+        run: |
+          curl -fsS --retry 5 --retry-delay 4 --retry-all-errors \
+            "https://cios-iai-one.pages.dev/" | grep -q "Customer Intelligence OS"
