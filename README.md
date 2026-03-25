@@ -33,7 +33,15 @@ npm run dev
 - `npm run typecheck`: run TypeScript type checks
 - `npm test`: run Vitest
 - `npm run db:migrate`: run SQL migrations in `migrations/`
-- `npm run deploy:pages`: deploy the static `site/` folder to Cloudflare Pages (requires Wrangler login and `CLOUDFLARE_ACCOUNT_ID` in `.env` when multiple accounts exist)
+- `npm run sync:site-version`: write `site/version.json` from `package.json`
+- `npm run deploy:pages`: deploy the static `site/` folder to Cloudflare Pages (runs `sync:site-version` first; requires Wrangler login and `CLOUDFLARE_ACCOUNT_ID` in `.env` when multiple accounts exist)
+
+## API versioning (semantic, monotonic)
+
+- **Package & API** follow **semver** in `package.json`. Public REST surface is namespaced under **`/v1`**; breaking HTTP changes ship as **`/v2`** later, not silent breaks.
+- **Policy:** each tagged release is expected to be a **complete superset** of the previous one for supported clients (new capabilities additive; deprecations documented).
+- **Discovery:** `GET /v1/meta` — version, optional git SHA (`GITHUB_SHA` / `CI_COMMIT_SHA`), `apiCompat`, and capability flags for clients (web / future mobile).
+- **Headers** on all responses: `X-App-Version` (semver), `X-API-Compat` (`v1`).
 
 ## Health endpoints
 
@@ -42,7 +50,11 @@ npm run dev
 
 ## Cloudflare Pages (static shell)
 
-The `site/` directory is deployed as a lightweight static site (landing / docs shell). Production URL:
+The `site/` directory is a **responsive, mobile-style shell** (safe areas, 44px touch targets, bottom nav) with **PWA manifest** and a small **`/js/app.js` feature registry** (`window.CIOS`) so new UI modules can mount without rewriting the shell — aligned with a future native wrapper (e.g. Capacitor / React Native WebView).
+
+`npm run sync:site-version` writes `site/version.json` from `package.json` (also run automatically before `npm run deploy:pages` and in CI before Pages upload).
+
+Production URL:
 
 - [https://cios-iai-one.pages.dev](https://cios-iai-one.pages.dev)
 

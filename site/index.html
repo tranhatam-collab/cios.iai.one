@@ -2,39 +2,108 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta
+      name="description"
+      content="Customer Intelligence OS — lớp giao diện web mở rộng, hướng tới ứng dụng mobile."
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <title>CIOS — Customer Intelligence OS</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        font-family:
-          system-ui,
-          -apple-system,
-          Segoe UI,
-          Roboto,
-          sans-serif;
-        line-height: 1.5;
-      }
-      body {
-        max-width: 42rem;
-        margin: 3rem auto;
-        padding: 0 1.25rem;
-      }
-      code {
-        font-size: 0.95em;
-      }
-    </style>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
   </head>
   <body>
-    <h1>Customer Intelligence OS</h1>
-    <p>
-      Repo API:
-      <a href="https://github.com/tranhatam-collab/cios.iai.one">github.com/tranhatam-collab/cios.iai.one</a>
-    </p>
-    <p>
-      Trang này là bản deploy tĩnh (Cloudflare Pages). API Node chạy riêng (VPS / container / PaaS); endpoint tham chiếu:
-      <code>GET /health</code>,
-      <code>GET /health/db</code>.
-    </p>
+    <a class="cios-skip" href="#main">Bỏ qua điều hướng</a>
+
+    <div class="cios-app" data-app="cios-shell" data-api-compat="v1">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <strong>Customer Intelligence OS</strong>
+          <span data-version-label title="">Đang tải phiên bản…</span>
+        </div>
+        <span class="cios-pill" id="cios-compat">API <span data-api-compat-label>v1</span></span>
+      </header>
+
+      <main class="cios-main" id="main" role="main" tabindex="-1">
+        <section class="cios-hero" aria-labelledby="cios-hero-title">
+          <h1 id="cios-hero-title">Hệ điều hành tình báo khách hàng</h1>
+          <p>
+            Giao diện web linh hoạt, tối ưu mobile và PWA — mỗi bản phát hành là một bản
+            <strong>hoàn chỉnh hơn</strong> bản trước (API <code>/v1</code>, mở rộng module theo
+            <code>window.CIOS</code>).
+          </p>
+        </section>
+
+        <section id="features" class="cios-grid" aria-label="Khối chức năng mở rộng">
+          <article class="cios-card" data-feature="api-meta" data-state="live">
+            <h2>Meta API</h2>
+            <p>
+              <code>GET /v1/meta</code> — phiên bản, commit, khả năng mở rộng. Header
+              <code>X-App-Version</code>, <code>X-API-Compat</code>.
+            </p>
+          </article>
+          <article class="cios-card" data-feature="health" data-state="live">
+            <h2>Sức khỏe dịch vụ</h2>
+            <p><code>GET /health</code> và <code>GET /health/db</code> cho giám sát và CI.</p>
+          </article>
+          <article class="cios-card" data-feature="mobile-shell" data-state="planned">
+            <h2>Mobile-ready shell</h2>
+            <p>
+              Bottom nav, vùng an toàn (notch), touch tối thiểu 44px — nền cho Capacitor / React Native sau
+              này.
+            </p>
+          </article>
+          <article class="cios-card" data-feature="module-registry" data-state="live">
+            <h2>Registry module</h2>
+            <p>
+              <code>registerFeature</code> / <code>mountFeature</code> trong
+              <code>/js/app.js</code> để gắn thêm màn hình mà không phá vỏ ứng dụng.
+            </p>
+          </article>
+          <article class="cios-card" data-feature="design-tokens" data-state="live">
+            <h2>Design tokens</h2>
+            <p>Biến CSS tập trung trong <code>/css/tokens.css</code> — dễ đồng bộ theme app native.</p>
+          </article>
+          <article class="cios-card" data-feature="version-manifest" data-state="live">
+            <h2>Phiên bản động</h2>
+            <p>
+              <code>/version.json</code> đồng bộ từ <code>package.json</code> trước khi deploy (xem script
+              trong repo).
+            </p>
+          </article>
+        </section>
+
+        <footer class="cios-footer">
+          <p>
+            Mã nguồn:
+            <a href="https://github.com/tranhatam-collab/cios.iai.one">tranhatam-collab/cios.iai.one</a>
+            · Trang tĩnh trên Cloudflare Pages; API Node chạy host riêng.
+          </p>
+        </footer>
+      </main>
+
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính (mobile-style)">
+        <a href="#main" aria-current="page">
+          <span class="cios-nav-icon" aria-hidden="true">⌂</span>
+          Trang chủ
+        </a>
+        <a href="#features">
+          <span class="cios-nav-icon" aria-hidden="true">◎</span>
+          Tính năng
+        </a>
+        <a href="https://github.com/tranhatam-collab/cios.iai.one">
+          <span class="cios-nav-icon" aria-hidden="true">⎇</span>
+          Mã nguồn
+        </a>
+      </nav>
+    </div>
+
+    <script type="module">
+      import { loadVersionBadge } from "/js/app.js";
+      loadVersionBadge();
+    </script>
   </body>
 </html>

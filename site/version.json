@@ -1,0 +1,7 @@
+{
+  "name": "cios.iai.one",
+  "version": "1.1.0",
+  "apiCompat": "v1",
+  "generatedAt": "2026-03-25T05:05:39.036Z",
+  "policy": "each_release_is_a_complete_superset"
+}
