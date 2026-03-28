@@ -7,11 +7,11 @@
     <meta name="theme-color" content="#2563eb" />
     <meta
       name="description"
-      content="Customer Intelligence OS — lớp giao diện web mở rộng, hướng tới ứng dụng mobile."
+      content="Hệ điều hành tìm kiếm khách hàng tự động bằng AI Agent Flow.iai.one."
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-    <title>CIOS — Customer Intelligence OS</title>
+    <title>CIOS — AI Agent Flow.iai.one</title>
     <link rel="stylesheet" href="/css/tokens.css" />
     <link rel="stylesheet" href="/css/layout.css" />
   </head>
@@ -21,7 +21,7 @@
     <div class="cios-app" data-app="cios-shell" data-api-compat="v1">
       <header class="cios-header" role="banner">
         <div class="cios-brand">
-          <strong>Customer Intelligence OS</strong>
+          <strong>AI Agent Flow.iai.one</strong>
           <span data-version-label title="">Đang tải phiên bản…</span>
         </div>
         <span class="cios-pill" id="cios-compat">API <span data-api-compat-label>v1</span></span>
@@ -29,11 +29,15 @@
 
       <main class="cios-main" id="main" role="main" tabindex="-1">
         <section class="cios-hero" aria-labelledby="cios-hero-title">
-          <h1 id="cios-hero-title">Hệ điều hành tình báo khách hàng</h1>
+          <h1 id="cios-hero-title">Hệ điều hành tìm kiếm khách hàng tự động bằng AI Agent Flow.iai.one</h1>
           <p>
             Giao diện web linh hoạt, tối ưu mobile và PWA — mỗi bản phát hành là một bản
             <strong>hoàn chỉnh hơn</strong> bản trước (API <code>/v1</code>, mở rộng module theo
             <code>window.CIOS</code>).
+          </p>
+          <p>
+            Phiên bản hiện tại: <strong>v1.1.0</strong> (đồng bộ động qua
+            <code>/version.json</code>).
           </p>
         </section>
 
@@ -70,19 +74,11 @@
           <article class="cios-card" data-feature="version-manifest" data-state="live">
             <h2>Phiên bản động</h2>
             <p>
-              <code>/version.json</code> đồng bộ từ <code>package.json</code> trước khi deploy (xem script
-              trong repo).
+              <code>/version.json</code> đồng bộ từ <code>package.json</code> trước khi deploy và hiển thị
+              tự động trên header bản phát hành.
             </p>
           </article>
         </section>
-
-        <footer class="cios-footer">
-          <p>
-            Mã nguồn:
-            <a href="https://github.com/tranhatam-collab/cios.iai.one">tranhatam-collab/cios.iai.one</a>
-            · Trang tĩnh trên Cloudflare Pages; API Node chạy host riêng.
-          </p>
-        </footer>
       </main>
 
       <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính (mobile-style)">
@@ -94,9 +90,9 @@
           <span class="cios-nav-icon" aria-hidden="true">◎</span>
           Tính năng
         </a>
-        <a href="https://github.com/tranhatam-collab/cios.iai.one">
-          <span class="cios-nav-icon" aria-hidden="true">⎇</span>
-          Mã nguồn
+        <a href="/v1/meta">
+          <span class="cios-nav-icon" aria-hidden="true">⚡</span>
+          Bắt đầu ngay
         </a>
       </nav>
     </div>

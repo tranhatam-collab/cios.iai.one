@@ -68,4 +68,4 @@ jobs:
       - name: Smoke test (production Pages URL)
         run: |
           curl -fsS --retry 5 --retry-delay 4 --retry-all-errors \
-            "https://cios-iai-one.pages.dev/" | grep -q "Customer Intelligence OS"
+            "https://cios-iai-one.pages.dev/" | grep -q "Hệ điều hành tìm kiếm khách hàng tự động"

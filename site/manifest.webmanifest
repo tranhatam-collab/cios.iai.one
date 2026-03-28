@@ -1,7 +1,7 @@
 {
-  "name": "Customer Intelligence OS",
+  "name": "AI Agent Flow.iai.one",
   "short_name": "CIOS",
-  "description": "Customer Intelligence OS — web shell toward mobile app.",
+  "description": "Hệ điều hành tìm kiếm khách hàng tự động bằng AI Agent Flow.iai.one.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f6f7fb",
