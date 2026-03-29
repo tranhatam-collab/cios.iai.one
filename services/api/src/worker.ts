@@ -1,4 +1,11 @@
 import { requireAuth, requireRole, type AuthContext, type Role } from "./lib/auth";
+import {
+  validateFlowCallbackPayload,
+  validateFlowDispatchPayload,
+  validateGovernanceApprovalPayload,
+  validateIngestPayload,
+  validateSimulationRunPayload
+} from "./lib/contracts";
 import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
 import { listFlowLogs, storeFlowLog, storeIngestEvent } from "./lib/domain-store";
@@ -156,14 +163,19 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
+      const validated = validateIngestPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
+      const idem = await enforceIdempotency(request, path, validated.value, traceId, env);
       if (idem instanceof Response) return idem;
       const eventRow = await storeIngestEvent(
         {
-          source: String(parsed.value.source),
-          eventType: String(parsed.value.event_type),
-          occurredAt: String(parsed.value.occurred_at),
-          payload: parsed.value.payload,
+          source: validated.value.source,
+          eventType: validated.value.eventType,
+          occurredAt: validated.value.occurredAt,
+          payload: {
+            payload: validated.value.payload,
+            entity_refs: validated.value.entityRefs
+          },
           traceId
         },
         env
@@ -195,6 +207,8 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
+      const validated = validateSimulationRunPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
       await writeAudit({
         at: new Date().toISOString(),
         route: path,
@@ -205,7 +219,12 @@ export default {
         traceId
       }, env);
       return ok(
-        { simulation_id: crypto.randomUUID(), status: "queued" },
+        {
+          simulation_id: crypto.randomUUID(),
+          status: "queued",
+          scenario_name: validated.value.scenarioName,
+          base_state_ref: validated.value.baseStateRef
+        },
         { phase: "workers-contract", status: "stubbed" },
         traceId
       );
@@ -222,6 +241,8 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
+      const validated = validateGovernanceApprovalPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
       await writeAudit({
         at: new Date().toISOString(),
         route: path,
@@ -232,7 +253,12 @@ export default {
         traceId
       }, env);
       return ok(
-        { approved: true, route: path, decision_id: crypto.randomUUID() },
+        {
+          approved: validated.value.decision === "approve",
+          route: path,
+          decision_id: crypto.randomUUID(),
+          request_id: validated.value.requestId
+        },
         { phase: "workers-contract", status: "stubbed" },
         traceId
       );
@@ -249,17 +275,19 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
+      const validated = validateFlowDispatchPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
+      const idem = await enforceIdempotency(request, path, validated.value, traceId, env);
       if (idem instanceof Response) return idem;
       const flowRunId = crypto.randomUUID();
       await storeFlowLog(
         {
           flowRunId,
-          triggerName: String(parsed.value.trigger_name),
+          triggerName: validated.value.triggerName,
           status: "accepted",
           completedAt: new Date().toISOString(),
           traceId,
-          payload: parsed.value.payload
+          payload: validated.value.payload
         },
         env
       );
@@ -286,14 +314,16 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
+      const validated = validateFlowCallbackPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
       await storeFlowLog(
         {
-          flowRunId: String(parsed.value.flow_run_id),
-          triggerName: String(parsed.value.trigger_name),
-          status: String(parsed.value.status),
-          completedAt: String(parsed.value.completed_at),
-          traceId: String(parsed.value.trace_id),
-          payload: parsed.value
+          flowRunId: validated.value.flowRunId,
+          triggerName: validated.value.triggerName,
+          status: validated.value.status,
+          completedAt: validated.value.completedAt,
+          traceId: validated.value.callbackTraceId,
+          payload: validated.value
         },
         env
       );
@@ -307,7 +337,7 @@ export default {
         traceId
       }, env);
       return ok(
-        { callback_processed: true, flow_run_id: parsed.value.flow_run_id },
+        { callback_processed: true, flow_run_id: validated.value.flowRunId },
         { phase: "workers-contract", status: "stubbed" },
         traceId
       );

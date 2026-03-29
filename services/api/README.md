@@ -47,6 +47,7 @@ Role mapping accepts direct CIOS roles (`observer|operator|governor|root`) and m
   - `audit.ts` (audit trail persistence with D1/KV fallback)
   - `persistence.ts` (D1 schema bootstrap for worker persistence)
   - `domain-store.ts` (D1/KV-backed storage for ingested events and flow logs)
+  - `contracts.ts` (route-level payload contract validators)
   - `envelope.ts` (uniform response contract)
 
 ## Implemented Contract Routes (Current)
