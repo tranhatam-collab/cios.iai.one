@@ -1,0 +1,9 @@
+name = "cios-workers-api"
+main = "src/worker.ts"
+compatibility_date = "2026-03-30"
+
+[observability]
+enabled = true
+
+[vars]
+API_CONTRACT = "phase2-workers-v1"

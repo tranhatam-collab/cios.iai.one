@@ -7,6 +7,16 @@ Cloudflare Workers API scaffold for CIOS phase-2 contract.
 - `docs/API_WORKERS_PHASE2_CONTRACT.md`
 - `services/api/contracts/openapi.v1.workers.yaml`
 
+## Local Run
+
+```bash
+cd services/api
+npm install
+npm run dev
+```
+
+Wrangler config is in `services/api/wrangler.toml`.
+
 ## Current Status
 
 - Worker entry scaffolded in `services/api/src/worker.ts`
