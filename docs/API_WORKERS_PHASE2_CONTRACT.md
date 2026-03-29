@@ -193,6 +193,7 @@ Route-level minimum:
 Callback route (worker webhook):
 
 - `POST /v1/flow/callback`
+- If `FLOW_WEBHOOK_SECRET` is configured, callback must include `x-flow-signature` HMAC-SHA256 header.
 
 Required callback fields:
 

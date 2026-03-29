@@ -9,6 +9,8 @@ enabled = true
 API_CONTRACT = "phase2-workers-v1"
 JWT_ISSUER = "cios.iai.one"
 JWT_AUDIENCE = "cios-workers-api"
+# Optional. If set, /v1/flow/callback requires x-flow-signature (HMAC-SHA256).
+# FLOW_WEBHOOK_SECRET should be configured via wrangler secret.
 
 [[d1_databases]]
 binding = "CIOS_DB"

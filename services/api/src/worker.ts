@@ -12,6 +12,7 @@ import { listFlowLogs, storeFlowLog, storeIngestEvent } from "./lib/domain-store
 import { enforceIdempotency } from "./lib/idempotency";
 import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
+import { verifyFlowSignature } from "./lib/signature";
 import { parseJsonBody } from "./lib/validation";
 
 function parsePositiveInt(value: string | null, fallback: number): number {
@@ -314,6 +315,23 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
+      const sig = await verifyFlowSignature(parsed.value, request, traceId, env.FLOW_WEBHOOK_SECRET);
+      if (sig instanceof Response) {
+        await writeAudit(
+          {
+            at: new Date().toISOString(),
+            route: path,
+            action: "flow_callback",
+            actor: "flow-system",
+            role: "operator",
+            result: "failed",
+            traceId,
+            details: { reason: "invalid_signature" }
+          },
+          env
+        );
+        return sig;
+      }
       const validated = validateFlowCallbackPayload(parsed.value, traceId);
       if ("response" in validated) return validated.response;
       await storeFlowLog(

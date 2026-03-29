@@ -34,6 +34,13 @@ If D1 is unavailable, worker falls back to KV; if KV is unavailable, it falls ba
 
 Role mapping accepts direct CIOS roles (`observer|operator|governor|root`) and maps legacy roles (`owner/admin/compliance_admin/sales_manager/sales_rep/...`) into the phase-2 role ladder.
 
+## Flow Callback Signature
+
+- Optional secret: `FLOW_WEBHOOK_SECRET` (set via `wrangler secret put FLOW_WEBHOOK_SECRET`)
+- If configured, `POST /v1/flow/callback` requires:
+  - header: `x-flow-signature`
+  - value: `hex(HMAC_SHA256(raw_json_body, FLOW_WEBHOOK_SECRET))`
+
 ## Current Status
 
 - Worker entry scaffolded in `services/api/src/worker.ts`
