@@ -11,6 +11,7 @@
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
     <title>CIOS — AI Agent Flow.iai.one</title>
     <link rel="stylesheet" href="/css/tokens.css" />
     <link rel="stylesheet" href="/css/layout.css" />
@@ -39,6 +40,7 @@
             Phiên bản hiện tại: <strong>v1.1.0</strong> (đồng bộ động qua
             <code>/version.json</code>).
           </p>
+          <p class="cios-status-line" data-api-status data-state="loading">Đang kiểm tra API realtime...</p>
         </section>
 
         <section id="features" class="cios-grid" aria-label="Khối chức năng mở rộng">
@@ -78,7 +80,81 @@
               tự động trên header bản phát hành.
             </p>
           </article>
+          <article class="cios-card" data-feature="mail-ops" data-state="live">
+            <h2>Email vận hành</h2>
+            <p>
+              Gửi liên hệ sản phẩm tới <a href="mailto:cios@iai.one?subject=CIOS%20product%20support">cios@iai.one</a>,
+              hỗ trợ tích hợp kỹ thuật tới <a href="mailto:developer@iai.one?subject=CIOS%20developer%20support">developer@iai.one</a>.
+              Các tác vụ gửi mail tự động phải đi qua <code>https://mail.iai.one/_mail</code> ở phía server.
+            </p>
+          </article>
         </section>
+
+        <section id="compliance" class="cios-compliance" aria-labelledby="cios-compliance-title">
+          <h2 id="cios-compliance-title">Compliance Center</h2>
+          <p>
+            Hệ thống chỉ xử lý dữ liệu công khai hợp pháp. Danh mục policy bên dưới được đồng bộ qua API
+            <code>/v1/compliance/policies</code>.
+          </p>
+          <ul class="cios-policy-list" data-policy-list>
+            <li>Đang tải policy...</li>
+          </ul>
+        </section>
+
+        <section id="auth-member" class="cios-compliance" aria-labelledby="cios-auth-member-title">
+          <h2 id="cios-auth-member-title">Auth + Member Plan</h2>
+          <p>Snapshot đăng nhập demo và danh sách gói thành viên từ API.</p>
+          <p>
+            Member: <strong data-auth-email>đang tải...</strong> |
+            Plan: <strong data-auth-plan>đang tải...</strong> |
+            Token: <strong data-auth-token-size>0</strong>
+          </p>
+          <ul class="cios-policy-list" data-member-plans>
+            <li>Đang tải plans...</li>
+          </ul>
+        </section>
+
+        <section id="crm" class="cios-compliance" aria-labelledby="cios-crm-title">
+          <h2 id="cios-crm-title">CRM List + Detail</h2>
+          <p>Danh sách tổ chức và bản xem nhanh chi tiết đầu tiên.</p>
+          <ul class="cios-policy-list" data-crm-list>
+            <li>Đang tải CRM list...</li>
+          </ul>
+          <p><strong data-crm-detail>Đang tải CRM detail...</strong></p>
+        </section>
+
+        <section id="compliance-ops" class="cios-compliance" aria-labelledby="cios-compliance-ops-title">
+          <h2 id="cios-compliance-ops-title">Compliance Audit + Retention</h2>
+          <p>Log kiểm toán và quy tắc retention ở mức vận hành.</p>
+          <h3>Audit log</h3>
+          <ul class="cios-policy-list" data-compliance-audit>
+            <li>Đang tải audit log...</li>
+          </ul>
+          <h3>Retention rules</h3>
+          <ul class="cios-policy-list" data-compliance-retention>
+            <li>Đang tải retention rules...</li>
+          </ul>
+        </section>
+
+        <section id="discovery" class="cios-compliance" aria-labelledby="cios-discovery-title">
+          <h2 id="cios-discovery-title">Source Discovery + Crawl Governance</h2>
+          <p>Queue nguồn mới và quyết định governance gần nhất.</p>
+          <h3>Discovery queue</h3>
+          <ul class="cios-policy-list" data-discovery-sources>
+            <li>Đang tải discovery queue...</li>
+          </ul>
+          <h3>Governance decisions</h3>
+          <ul class="cios-policy-list" data-discovery-governance>
+            <li>Đang tải governance decisions...</li>
+          </ul>
+        </section>
+
+        <footer class="cios-footer" role="contentinfo">
+          <p>
+            Cần hỗ trợ? Liên hệ <a href="mailto:cios@iai.one">cios@iai.one</a>. Tích hợp kỹ thuật:
+            <a href="mailto:developer@iai.one">developer@iai.one</a>.
+          </p>
+        </footer>
       </main>
 
       <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính (mobile-style)">
@@ -90,16 +166,33 @@
           <span class="cios-nav-icon" aria-hidden="true">◎</span>
           Tính năng
         </a>
-        <a href="/v1/meta">
+        <a href="#auth-member">
           <span class="cios-nav-icon" aria-hidden="true">⚡</span>
-          Bắt đầu ngay
+          Sprint
         </a>
       </nav>
     </div>
 
     <script type="module">
-      import { loadVersionBadge } from "/js/app.js";
-      loadVersionBadge();
+      import {
+        loadApiStatus,
+        loadAuthMemberSnapshot,
+        loadComplianceOpsSnapshot,
+        loadCompliancePolicies,
+        loadCrmSnapshot,
+        loadDiscoverySnapshot,
+        loadVersionBadge
+      } from "/js/app.js";
+
+      (async () => {
+        loadVersionBadge();
+        loadApiStatus();
+        loadCompliancePolicies();
+        await loadAuthMemberSnapshot();
+        await loadCrmSnapshot();
+        await loadComplianceOpsSnapshot();
+        await loadDiscoverySnapshot();
+      })();
     </script>
   </body>
 </html>

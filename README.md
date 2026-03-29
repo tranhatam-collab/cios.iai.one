@@ -47,12 +47,37 @@ npm run dev
 
 - `GET /health`
 - `GET /health/db` (requires PostgreSQL reachable via `DATABASE_URL`)
+- `GET /v1/compliance/policies` (returns legal/compliance links for web shell)
+- `POST /v1/auth/register`, `POST /v1/auth/session`, `GET /v1/auth/me`, `GET /v1/auth/audit`
+- `GET /v1/members/plans`
+- `GET /v1/crm/organizations`, `GET /v1/crm/organizations/:id`
+- `GET /v1/compliance/audit-log`, `GET /v1/compliance/retention-rules`
+- `GET /v1/discovery/sources`, `GET /v1/discovery/crawl-governance`
+
+Notes:
+
+- `crm`, `compliance/audit-log`, `compliance/retention-rules`, and `discovery/*` endpoints require a Bearer JWT from `POST /v1/auth/session`.
+- RBAC rules:
+  - `crm/*`: `owner`, `admin`, `sales_manager`, `sales_rep`
+  - `compliance/audit-log`, `compliance/retention-rules`, `auth/audit`: `owner`, `admin`, `compliance_admin`
+  - `discovery/*`: `owner`, `admin`, `compliance_admin`, `sales_manager`
+- Run `npm run db:migrate` to apply schema/seed for Sprint 3 (plans, organizations, audit logs, retention rules, discovery queue).
+  Sprint 4 adds `auth_session_audit_logs` migration for login/session trail.
 
 ## Cloudflare Pages (static shell)
 
 The `site/` directory is a **responsive, mobile-style shell** (safe areas, 44px touch targets, bottom nav) with **PWA manifest** and a small **`/js/app.js` feature registry** (`window.CIOS`) so new UI modules can mount without rewriting the shell — aligned with a future native wrapper (e.g. Capacitor / React Native WebView).
 
 `npm run sync:site-version` writes `site/version.json` from `package.json` (also run automatically before `npm run deploy:pages` and in CI before Pages upload).
+
+Compliance pages currently shipped in `site/legal/`:
+
+- `privacy.html`
+- `terms.html`
+- `data-source-policy.html`
+- `suppression-list.html`
+- `deletion-request.html`
+- `right-to-object.html`
 
 Production URL:
 

@@ -8,6 +8,7 @@ html {
   font-family: var(--cios-font-sans);
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -69,6 +70,7 @@ a:hover {
     var(--cios-space-3) max(var(--cios-space-4), env(safe-area-inset-right));
   padding-top: max(var(--cios-space-3), env(safe-area-inset-top));
   background: color-mix(in srgb, var(--cios-color-surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--cios-color-border);
 }
@@ -134,6 +136,19 @@ a:hover {
   max-width: 40rem;
 }
 
+.cios-status-line {
+  margin-top: var(--cios-space-4);
+  font-weight: 600;
+}
+
+.cios-status-line[data-state="ok"] {
+  color: color-mix(in srgb, var(--cios-color-accent) 70%, var(--cios-color-text));
+}
+
+.cios-status-line[data-state="error"] {
+  color: #dc2626;
+}
+
 .cios-grid {
   display: grid;
   gap: var(--cios-space-4);
@@ -175,6 +190,31 @@ a:hover {
   opacity: 0.92;
 }
 
+.cios-compliance {
+  margin-top: var(--cios-space-8);
+  padding: var(--cios-space-6);
+  border-radius: var(--cios-radius-md);
+  background: var(--cios-color-surface);
+  border: 1px solid var(--cios-color-border);
+  box-shadow: var(--cios-shadow-sm);
+}
+
+.cios-compliance h2 {
+  margin-top: 0;
+}
+
+.cios-compliance p {
+  margin-bottom: var(--cios-space-4);
+  color: var(--cios-color-muted);
+}
+
+.cios-policy-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: var(--cios-space-2);
+}
+
 .cios-footer {
   margin-top: var(--cios-space-12);
   padding-top: var(--cios-space-6);
@@ -197,6 +237,7 @@ a:hover {
     max(var(--cios-space-2), env(safe-area-inset-bottom))
     max(var(--cios-space-2), env(safe-area-inset-right));
   background: color-mix(in srgb, var(--cios-color-surface) 94%, transparent);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--cios-color-border);
 }
