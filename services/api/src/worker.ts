@@ -1,6 +1,7 @@
 import { requireAuth, requireRole, type AuthContext, type Role } from "./lib/auth";
 import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
+import { listFlowLogs, storeFlowLog, storeIngestEvent } from "./lib/domain-store";
 import { enforceIdempotency } from "./lib/idempotency";
 import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
@@ -157,6 +158,16 @@ export default {
       if ("response" in parsed) return parsed.response;
       const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
       if (idem instanceof Response) return idem;
+      const eventRow = await storeIngestEvent(
+        {
+          source: String(parsed.value.source),
+          eventType: String(parsed.value.event_type),
+          occurredAt: String(parsed.value.occurred_at),
+          payload: parsed.value.payload,
+          traceId
+        },
+        env
+      );
       await writeAudit({
         at: new Date().toISOString(),
         route: path,
@@ -166,7 +177,11 @@ export default {
         result: "success",
         traceId
       }, env);
-      return ok({ accepted: true, route: path }, { phase: "workers-contract", status: "stubbed" }, traceId);
+      return ok(
+        { accepted: true, route: path, event_id: eventRow.id },
+        { phase: "workers-contract", status: env.CIOS_DB ? "d1-persisted" : "fallback-persisted" },
+        traceId
+      );
     }
 
     if (method === "POST" && path === "/v1/simulations/run") {
@@ -236,6 +251,18 @@ export default {
       if ("response" in parsed) return parsed.response;
       const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
       if (idem instanceof Response) return idem;
+      const flowRunId = crypto.randomUUID();
+      await storeFlowLog(
+        {
+          flowRunId,
+          triggerName: String(parsed.value.trigger_name),
+          status: "accepted",
+          completedAt: new Date().toISOString(),
+          traceId,
+          payload: parsed.value.payload
+        },
+        env
+      );
       await writeAudit({
         at: new Date().toISOString(),
         route: path,
@@ -246,8 +273,8 @@ export default {
         traceId
       }, env);
       return ok(
-        { flow_dispatch_id: crypto.randomUUID(), status: "accepted" },
-        { phase: "workers-contract", status: "stubbed" },
+        { flow_dispatch_id: flowRunId, status: "accepted" },
+        { phase: "workers-contract", status: env.CIOS_DB ? "d1-persisted" : "fallback-persisted" },
         traceId
       );
     }
@@ -259,6 +286,17 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
+      await storeFlowLog(
+        {
+          flowRunId: String(parsed.value.flow_run_id),
+          triggerName: String(parsed.value.trigger_name),
+          status: String(parsed.value.status),
+          completedAt: String(parsed.value.completed_at),
+          traceId: String(parsed.value.trace_id),
+          payload: parsed.value
+        },
+        env
+      );
       await writeAudit({
         at: new Date().toISOString(),
         route: path,
@@ -286,15 +324,23 @@ export default {
       const auth = await authorize(request, traceId, env, "governor", path, "flow_logs_read");
       if (auth instanceof Response) return auth;
       const q = readListQuery(url);
+      const logs = await listFlowLogs(
+        {
+          page: q.page,
+          pageSize: q.pageSize,
+          from: q.from,
+          to: q.to
+        },
+        env
+      );
       return ok(
-        [
-          {
-            flow_run_id: "flow_run_001",
-            trigger_name: "emergency-response",
-            status: "success",
-            completed_at: new Date().toISOString()
-          }
-        ],
+        logs.map((row) => ({
+          flow_run_id: row.flowRunId,
+          trigger_name: row.triggerName,
+          status: row.status,
+          completed_at: row.completedAt,
+          trace_id: row.traceId
+        })),
         { pagination: { page: q.page, page_size: q.pageSize }, filters: { from: q.from, to: q.to } },
         traceId
       );
