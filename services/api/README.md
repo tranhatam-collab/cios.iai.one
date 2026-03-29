@@ -16,6 +16,8 @@ Cloudflare Workers API scaffold for CIOS phase-2 contract.
   - `auth.ts` (JWT bearer parsing + role guard)
   - `validation.ts` (required field checks)
   - `idempotency.ts` (header + payload conflict guard)
+  - `rate-limit.ts` (sensitive endpoint throttling)
+  - `audit.ts` (audit trail buffer for critical actions)
   - `envelope.ts` (uniform response contract)
 
 ## Next Implementation Steps
