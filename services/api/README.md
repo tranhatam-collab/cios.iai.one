@@ -12,6 +12,11 @@ Cloudflare Workers API scaffold for CIOS phase-2 contract.
 - Worker entry scaffolded in `services/api/src/worker.ts`
 - Response envelope locked: `ok`, `data`, `meta`, `error`, `trace_id`
 - Route stubs created for critical phase-2 endpoints
+- Shared modules added in `services/api/src/lib/`:
+  - `auth.ts` (JWT bearer parsing + role guard)
+  - `validation.ts` (required field checks)
+  - `idempotency.ts` (header + payload conflict guard)
+  - `envelope.ts` (uniform response contract)
 
 ## Next Implementation Steps
 

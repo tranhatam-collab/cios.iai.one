@@ -1,59 +1,7 @@
-type ApiEnvelope = {
-  ok: boolean;
-  data: unknown;
-  meta: Record<string, unknown>;
-  error: { code: string; message: string; details?: unknown } | null;
-  trace_id: string;
-};
-
-function makeTraceId(): string {
-  return crypto.randomUUID();
-}
-
-function json(status: number, envelope: ApiEnvelope): Response {
-  return new Response(JSON.stringify(envelope), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" }
-  });
-}
-
-function ok(data: unknown, meta: Record<string, unknown> = {}, traceId = makeTraceId()): Response {
-  return json(200, {
-    ok: true,
-    data,
-    meta,
-    error: null,
-    trace_id: traceId
-  });
-}
-
-function fail(
-  status: number,
-  code: string,
-  message: string,
-  details?: unknown,
-  traceId = makeTraceId()
-): Response {
-  return json(status, {
-    ok: false,
-    data: null,
-    meta: {},
-    error: { code, message, details },
-    trace_id: traceId
-  });
-}
-
-function unauthorized(traceId: string): Response {
-  return fail(401, "UNAUTHORIZED", "Missing or invalid bearer token.", undefined, traceId);
-}
-
-function getBearerToken(request: Request): string | null {
-  const auth = request.headers.get("authorization");
-  if (!auth) return null;
-  const [scheme, token] = auth.split(" ");
-  if (scheme?.toLowerCase() !== "bearer" || !token) return null;
-  return token;
-}
+import { requireAuth, requireRole } from "./lib/auth";
+import { fail, makeTraceId, ok } from "./lib/envelope";
+import { enforceIdempotency } from "./lib/idempotency";
+import { parseJsonBody } from "./lib/validation";
 
 async function handleSystemState(traceId: string): Promise<Response> {
   return ok(
@@ -69,14 +17,19 @@ async function handleSystemState(traceId: string): Promise<Response> {
 }
 
 async function handleNotImplemented(route: string, traceId: string): Promise<Response> {
-  return fail(501, "NOT_IMPLEMENTED", `Route ${route} is defined in contract but not implemented yet.`, undefined, traceId);
+  return fail(
+    501,
+    "NOT_IMPLEMENTED",
+    `Route ${route} is defined in contract but not implemented yet.`,
+    undefined,
+    traceId
+  );
 }
 
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const traceId = request.headers.get("x-trace-id") ?? makeTraceId();
-    const token = getBearerToken(request);
     const method = request.method.toUpperCase();
     const path = url.pathname;
 
@@ -85,27 +38,89 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/events/ingest") {
-      if (!token) return unauthorized(traceId);
-      return handleNotImplemented(path, traceId);
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "operator", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["source", "event_type", "occurred_at", "payload"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      const idem = await enforceIdempotency(request, path, parsed.value, traceId);
+      if (idem instanceof Response) return idem;
+      return ok({ accepted: true, route: path }, { phase: "workers-contract", status: "stubbed" }, traceId);
     }
 
     if (method === "POST" && path === "/v1/simulations/run") {
-      if (!token) return unauthorized(traceId);
-      return handleNotImplemented(path, traceId);
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "operator", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["scenario_name", "base_state_ref", "input_parameters", "time_horizon"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      return ok(
+        { simulation_id: crypto.randomUUID(), status: "queued" },
+        { phase: "workers-contract", status: "stubbed" },
+        traceId
+      );
     }
 
     if (method === "POST" && path === "/v1/governance/approvals") {
-      if (!token) return unauthorized(traceId);
-      return handleNotImplemented(path, traceId);
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "governor", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["request_id", "decision", "reason"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      return ok(
+        { approved: true, route: path, decision_id: crypto.randomUUID() },
+        { phase: "workers-contract", status: "stubbed" },
+        traceId
+      );
     }
 
     if (method === "POST" && path === "/v1/flow/dispatch") {
-      if (!token) return unauthorized(traceId);
-      return handleNotImplemented(path, traceId);
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "governor", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["trigger_name", "source_decision_id", "payload", "priority", "expected_callback", "requested_by"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      const idem = await enforceIdempotency(request, path, parsed.value, traceId);
+      if (idem instanceof Response) return idem;
+      return ok(
+        { flow_dispatch_id: crypto.randomUUID(), status: "accepted" },
+        { phase: "workers-contract", status: "stubbed" },
+        traceId
+      );
     }
 
     if (method === "POST" && path === "/v1/flow/callback") {
-      return handleNotImplemented(path, traceId);
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["flow_run_id", "trigger_name", "status", "completed_at", "trace_id"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      return ok(
+        { callback_processed: true, flow_run_id: parsed.value.flow_run_id },
+        { phase: "workers-contract", status: "stubbed" },
+        traceId
+      );
     }
 
     return fail(404, "NOT_FOUND", "Route not found.", { method, path }, traceId);
