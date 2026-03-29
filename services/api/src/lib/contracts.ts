@@ -284,3 +284,85 @@ export function validateIngestPayload(
     }
   };
 }
+
+export function validateEventSearchFilters(query: {
+  text: string | null;
+  source: string | null;
+  eventType: string | null;
+  from: string | null;
+  to: string | null;
+}): {
+  text: string | null;
+  source: string | null;
+  eventType: string | null;
+  from: string | null;
+  to: string | null;
+} {
+  return {
+    text: query.text?.trim() || null,
+    source: query.source?.trim() || null,
+    eventType: query.eventType?.trim() || null,
+    from: query.from?.trim() || null,
+    to: query.to?.trim() || null
+  };
+}
+
+export function validateDataQueryPayload(
+  payload: Record<string, unknown>,
+  traceId: string
+): ParsedBody<{
+  dimensions: string[];
+  filters: {
+    source?: string;
+    event_type?: string;
+    risk_level?: string;
+    from?: string;
+    to?: string;
+  };
+  metrics: string[];
+  timeSlice: "hour" | "day";
+  limit: number;
+}> {
+  const dimensions = Array.isArray(payload.dimensions)
+    ? payload.dimensions.filter((x): x is string => typeof x === "string")
+    : [];
+  const metrics = Array.isArray(payload.metrics)
+    ? payload.metrics.filter((x): x is string => typeof x === "string")
+    : [];
+  const filters =
+    payload.filters && typeof payload.filters === "object" && !Array.isArray(payload.filters)
+      ? (payload.filters as Record<string, unknown>)
+      : {};
+  const timeSliceRaw = typeof payload.time_slice === "string" ? payload.time_slice : "hour";
+  const timeSlice = timeSliceRaw === "day" ? "day" : "hour";
+  const limitRaw = parseNumber(payload.limit);
+  const limit = Math.max(1, Math.min(limitRaw ?? 100, 500));
+
+  if (dimensions.length === 0 || metrics.length === 0) {
+    return {
+      response: fail(
+        400,
+        "VALIDATION_FAILED",
+        "data/query requires non-empty dimensions and metrics.",
+        { required: ["dimensions[]", "metrics[]"] },
+        traceId
+      )
+    };
+  }
+
+  return {
+    value: {
+      dimensions,
+      filters: {
+        source: typeof filters.source === "string" ? filters.source : undefined,
+        event_type: typeof filters.event_type === "string" ? filters.event_type : undefined,
+        risk_level: typeof filters.risk_level === "string" ? filters.risk_level : undefined,
+        from: typeof filters.from === "string" ? filters.from : undefined,
+        to: typeof filters.to === "string" ? filters.to : undefined
+      },
+      metrics,
+      timeSlice,
+      limit
+    }
+  };
+}

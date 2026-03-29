@@ -230,3 +230,13 @@ Must audit:
 - trace_id propagation end-to-end
 - audit logging on all critical actions
 - callback/status mapping for Flow integration routes
+
+## Implementation Progress Notes
+
+- Implemented on workers runtime:
+  - `GET /v1/events/search` with text/source/type/time filters
+  - `POST /v1/data/query` with dimensions/metrics/time slicing contract
+- Data source priority:
+  - D1 primary
+  - KV fallback
+  - memory fallback for local resilience

@@ -1,5 +1,7 @@
 import { requireAuth, requireRole, type AuthContext, type Role } from "./lib/auth";
 import {
+  validateDataQueryPayload,
+  validateEventSearchFilters,
   validateFlowCallbackPayload,
   validateFlowDispatchPayload,
   validateGovernanceApprovalPayload,
@@ -10,6 +12,8 @@ import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
 import {
   getSystemMetrics,
+  runDataQuery,
+  searchEvents,
   listFlowLogs,
   listHourlyReports,
   storeFlowLog,
@@ -210,6 +214,48 @@ export default {
       );
     }
 
+    if (method === "GET" && path === "/v1/events/search") {
+      const auth = await authorize(request, traceId, env, "observer", path, "events_search");
+      if (auth instanceof Response) return auth;
+      const q = readListQuery(url);
+      const filters = validateEventSearchFilters({
+        text: url.searchParams.get("q"),
+        source: url.searchParams.get("source"),
+        eventType: url.searchParams.get("event_type"),
+        from: q.from,
+        to: q.to
+      });
+      const rows = await searchEvents(
+        {
+          page: q.page,
+          pageSize: q.pageSize,
+          from: filters.from,
+          to: filters.to,
+          text: filters.text,
+          source: filters.source,
+          eventType: filters.eventType,
+          sortOrder: q.sortOrder
+        },
+        env
+      );
+      return ok(
+        rows.map((row) => ({
+          id: row.id,
+          source: row.source,
+          event_type: row.eventType,
+          occurred_at: row.occurredAt,
+          trace_id: row.traceId,
+          payload: row.payload
+        })),
+        {
+          pagination: { page: q.page, page_size: q.pageSize },
+          filters,
+          source: env.CIOS_DB ? "d1-search" : "fallback-search"
+        },
+        traceId
+      );
+    }
+
     if (method === "POST" && path === "/v1/simulations/run") {
       const auth = await authorize(request, traceId, env, "operator", path, "simulation_run");
       if (auth instanceof Response) return auth;
@@ -317,6 +363,54 @@ export default {
       return ok(
         { flow_dispatch_id: flowRunId, status: "accepted" },
         { phase: "workers-contract", status: env.CIOS_DB ? "d1-persisted" : "fallback-persisted" },
+        traceId
+      );
+    }
+
+    if (method === "POST" && path === "/v1/data/query") {
+      const auth = await authorize(request, traceId, env, "operator", path, "data_query");
+      if (auth instanceof Response) return auth;
+      const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 25, 60_000, traceId);
+      if (rate instanceof Response) return rate;
+      const parsed = await parseJsonBody<Record<string, unknown>>(
+        request,
+        ["dimensions", "metrics"],
+        traceId
+      );
+      if ("response" in parsed) return parsed.response;
+      const validated = validateDataQueryPayload(parsed.value, traceId);
+      if ("response" in validated) return validated.response;
+
+      const rows = await runDataQuery(validated.value, env);
+      await writeAudit(
+        {
+          at: new Date().toISOString(),
+          route: path,
+          action: "data_query",
+          actor: auth.subject,
+          role: auth.role,
+          result: "success",
+          traceId,
+          details: {
+            dimensions: validated.value.dimensions,
+            metrics: validated.value.metrics,
+            time_slice: validated.value.timeSlice
+          }
+        },
+        env
+      );
+
+      return ok(
+        rows,
+        {
+          source: env.CIOS_DB ? "d1-query" : "fallback-query",
+          query: {
+            dimensions: validated.value.dimensions,
+            metrics: validated.value.metrics,
+            time_slice: validated.value.timeSlice,
+            limit: validated.value.limit
+          }
+        },
         traceId
       );
     }

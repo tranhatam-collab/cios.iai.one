@@ -35,6 +35,15 @@ type HourlyReport = {
   anomalyCount: number;
 };
 
+type EventSearchRow = {
+  id: string;
+  source: string;
+  eventType: string;
+  occurredAt: string;
+  traceId: string;
+  payload: unknown;
+};
+
 const eventMemory: StoredEvent[] = [];
 const flowMemory: FlowLog[] = [];
 
@@ -363,4 +372,186 @@ export async function listHourlyReports(
   }));
   rows.sort((a, b) => (opts.sortOrder === "asc" ? (a.bucketStart < b.bucketStart ? -1 : 1) : a.bucketStart > b.bucketStart ? -1 : 1));
   return rows.slice(offset, offset + opts.pageSize);
+}
+
+export async function searchEvents(
+  opts: {
+    page: number;
+    pageSize: number;
+    from: string | null;
+    to: string | null;
+    text: string | null;
+    source: string | null;
+    eventType: string | null;
+    sortOrder: "asc" | "desc";
+  },
+  env: WorkerEnv
+): Promise<EventSearchRow[]> {
+  const from = parseIsoOrFallback(opts.from, "1970-01-01T00:00:00.000Z");
+  const to = parseIsoOrFallback(opts.to, "9999-12-31T23:59:59.999Z");
+  const offset = (opts.page - 1) * opts.pageSize;
+  const order = opts.sortOrder === "asc" ? "ASC" : "DESC";
+  const textLike = `%${opts.text ?? ""}%`;
+  const sourceLike = `%${opts.source ?? ""}%`;
+  const eventTypeLike = `%${opts.eventType ?? ""}%`;
+
+  if (env.CIOS_DB) {
+    try {
+      const result = await env.CIOS_DB.prepare(
+        `
+        SELECT id, source, event_type, occurred_at, trace_id, payload_json
+        FROM api_events
+        WHERE occurred_at >= ? AND occurred_at <= ?
+          AND source LIKE ?
+          AND event_type LIKE ?
+          AND (
+            id LIKE ?
+            OR source LIKE ?
+            OR event_type LIKE ?
+            OR payload_json LIKE ?
+          )
+        ORDER BY occurred_at ${order}
+        LIMIT ? OFFSET ?
+        `
+      )
+        .bind(
+          from,
+          to,
+          sourceLike,
+          eventTypeLike,
+          textLike,
+          textLike,
+          textLike,
+          textLike,
+          opts.pageSize,
+          offset
+        )
+        .all<{
+          id: string;
+          source: string;
+          event_type: string;
+          occurred_at: string;
+          trace_id: string;
+          payload_json: string;
+        }>();
+      return (result.results ?? []).map((row) => ({
+        id: row.id,
+        source: row.source,
+        eventType: row.event_type,
+        occurredAt: row.occurred_at,
+        traceId: row.trace_id,
+        payload: row.payload_json ? JSON.parse(row.payload_json) : {}
+      }));
+    } catch {
+      // fallback
+    }
+  }
+
+  const text = (opts.text ?? "").toLowerCase();
+  const rows = eventMemory.filter((event) => {
+    if (event.occurredAt < from || event.occurredAt > to) return false;
+    if (opts.source && !event.source.toLowerCase().includes(opts.source.toLowerCase())) return false;
+    if (opts.eventType && !event.eventType.toLowerCase().includes(opts.eventType.toLowerCase())) return false;
+    if (!text) return true;
+    const joined = `${event.id} ${event.source} ${event.eventType} ${JSON.stringify(event.payload)}`.toLowerCase();
+    return joined.includes(text);
+  });
+  rows.sort((a, b) =>
+    opts.sortOrder === "asc" ? (a.occurredAt < b.occurredAt ? -1 : 1) : a.occurredAt > b.occurredAt ? -1 : 1
+  );
+  const sliced = rows.slice(offset, offset + opts.pageSize);
+  return sliced.map((row) => ({
+    id: row.id,
+    source: row.source,
+    eventType: row.eventType,
+    occurredAt: row.occurredAt,
+    traceId: row.traceId,
+    payload: row.payload
+  }));
+}
+
+export async function runDataQuery(
+  query: {
+    dimensions: string[];
+    filters: {
+      source?: string;
+      event_type?: string;
+      risk_level?: string;
+      from?: string;
+      to?: string;
+    };
+    metrics: string[];
+    timeSlice: "hour" | "day";
+    limit: number;
+  },
+  env: WorkerEnv
+): Promise<Record<string, unknown>[]> {
+  const supportedDimensions = new Set(["source", "event_type", "bucket"]);
+  const supportedMetrics = new Set(["event_count", "anomaly_count", "risk_event_count"]);
+
+  const dimensions = query.dimensions.filter((d) => supportedDimensions.has(d));
+  const metrics = query.metrics.filter((m) => supportedMetrics.has(m));
+  const from = parseIsoOrFallback(query.filters.from ?? null, "1970-01-01T00:00:00.000Z");
+  const to = parseIsoOrFallback(query.filters.to ?? null, "9999-12-31T23:59:59.999Z");
+  const sourceLike = `%${query.filters.source ?? ""}%`;
+  const eventTypeLike = `%${query.filters.event_type ?? ""}%`;
+  const riskLike = `%${query.filters.risk_level ?? ""}%`;
+
+  if (env.CIOS_DB && dimensions.length > 0 && metrics.length > 0) {
+    try {
+      const bucketExpr =
+        query.timeSlice === "day"
+          ? "strftime('%Y-%m-%dT00:00:00.000Z', occurred_at)"
+          : "strftime('%Y-%m-%dT%H:00:00.000Z', occurred_at)";
+      const selectParts: string[] = [];
+      if (dimensions.includes("source")) selectParts.push("source");
+      if (dimensions.includes("event_type")) selectParts.push("event_type");
+      if (dimensions.includes("bucket")) selectParts.push(`${bucketExpr} AS bucket`);
+      if (metrics.includes("event_count")) selectParts.push("COUNT(*) AS event_count");
+      if (metrics.includes("anomaly_count"))
+        selectParts.push("SUM(CASE WHEN LOWER(event_type) LIKE '%anomaly%' THEN 1 ELSE 0 END) AS anomaly_count");
+      if (metrics.includes("risk_event_count"))
+        selectParts.push("SUM(CASE WHEN LOWER(event_type) LIKE '%risk%' THEN 1 ELSE 0 END) AS risk_event_count");
+
+      const groupByParts: string[] = [];
+      if (dimensions.includes("source")) groupByParts.push("source");
+      if (dimensions.includes("event_type")) groupByParts.push("event_type");
+      if (dimensions.includes("bucket")) groupByParts.push("bucket");
+
+      const sql = `
+        SELECT ${selectParts.join(", ")}
+        FROM api_events
+        WHERE occurred_at >= ? AND occurred_at <= ?
+          AND source LIKE ?
+          AND event_type LIKE ?
+          AND payload_json LIKE ?
+        GROUP BY ${groupByParts.join(", ")}
+        ORDER BY ${groupByParts.join(", ")}
+        LIMIT ?
+      `;
+      const result = await env.CIOS_DB.prepare(sql)
+        .bind(from, to, sourceLike, eventTypeLike, riskLike, query.limit)
+        .all<Record<string, unknown>>();
+      return result.results ?? [];
+    } catch {
+      // fallback
+    }
+  }
+
+  const filtered = eventMemory.filter((event) => {
+    if (event.occurredAt < from || event.occurredAt > to) return false;
+    if (query.filters.source && !event.source.includes(query.filters.source)) return false;
+    if (query.filters.event_type && !event.eventType.includes(query.filters.event_type)) return false;
+    if (query.filters.risk_level && !JSON.stringify(event.payload).toLowerCase().includes(query.filters.risk_level.toLowerCase()))
+      return false;
+    return true;
+  });
+  return [
+    {
+      fallback: true,
+      event_count: filtered.length,
+      anomaly_count: filtered.filter((e) => e.eventType.toLowerCase().includes("anomaly")).length,
+      risk_event_count: filtered.filter((e) => e.eventType.toLowerCase().includes("risk")).length
+    }
+  ];
 }

@@ -63,6 +63,7 @@ Role mapping accepts direct CIOS roles (`observer|operator|governor|root`) and m
 - `GET /v1/system/health`
 - `GET /v1/system/metrics` (aggregated from D1 events/audit/flow logs with time window)
 - `POST /v1/events/ingest` (operator+, idempotency)
+- `GET /v1/events/search` (observer+, D1 text/source/type + time slicing)
 - `POST /v1/simulations/run` (operator+)
 - `POST /v1/governance/approvals` (governor+)
 - `POST /v1/flow/dispatch` (governor+, idempotency)
@@ -70,6 +71,7 @@ Role mapping accepts direct CIOS roles (`observer|operator|governor|root`) and m
 - `GET /v1/governance/audit` (governor+)
 - `GET /v1/flow/logs` (governor+)
 - `GET /v1/reports/hourly` (observer+, hourly D1 aggregation with pagination + time filters)
+- `POST /v1/data/query` (operator+, D1 multi-dimension query surface)
 
 ## Next Implementation Steps
 
