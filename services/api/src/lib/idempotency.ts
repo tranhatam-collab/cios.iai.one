@@ -1,4 +1,5 @@
 import { fail } from "./envelope";
+import { ensurePersistenceSchema, type WorkerEnv } from "./persistence";
 
 type Entry = {
   route: string;
@@ -29,7 +30,8 @@ export async function enforceIdempotency(
   request: Request,
   route: string,
   body: unknown,
-  traceId: string
+  traceId: string,
+  env?: WorkerEnv
 ): Promise<true | Response> {
   const rawKey = request.headers.get("idempotency-key");
   if (!rawKey) {
@@ -37,8 +39,65 @@ export async function enforceIdempotency(
   }
 
   const now = Date.now();
-  gc(now);
   const payloadHash = await hashPayload(body);
+
+  if (env?.CIOS_DB) {
+    await ensurePersistenceSchema(env);
+    await env.CIOS_DB.prepare("DELETE FROM api_idempotency_keys WHERE expires_at_ms < ?").bind(now).run();
+
+    const existing = await env.CIOS_DB.prepare(
+      "SELECT route, payload_hash FROM api_idempotency_keys WHERE idem_key = ? LIMIT 1"
+    )
+      .bind(rawKey)
+      .first<{ route: string; payload_hash: string }>();
+
+    if (!existing) {
+      await env.CIOS_DB.prepare(
+        "INSERT INTO api_idempotency_keys (idem_key, route, payload_hash, created_at_ms, expires_at_ms) VALUES (?, ?, ?, ?, ?)"
+      )
+        .bind(rawKey, route, payloadHash, now, now + TTL_MS)
+        .run();
+      return true;
+    }
+
+    if (existing.route !== route || existing.payload_hash !== payloadHash) {
+      return fail(
+        409,
+        "IDEMPOTENCY_CONFLICT",
+        "Idempotency key already used with different route or payload.",
+        undefined,
+        traceId
+      );
+    }
+
+    return true;
+  }
+
+  if (env?.CIOS_KV) {
+    const kvKey = `idem:${rawKey}`;
+    const existingRaw = await env.CIOS_KV.get(kvKey);
+    if (!existingRaw) {
+      await env.CIOS_KV.put(
+        kvKey,
+        JSON.stringify({ route, payloadHash, createdAtMs: now }),
+        { expirationTtl: Math.floor(TTL_MS / 1000) }
+      );
+      return true;
+    }
+    const existing = JSON.parse(existingRaw) as { route: string; payloadHash: string };
+    if (existing.route !== route || existing.payloadHash !== payloadHash) {
+      return fail(
+        409,
+        "IDEMPOTENCY_CONFLICT",
+        "Idempotency key already used with different route or payload.",
+        undefined,
+        traceId
+      );
+    }
+    return true;
+  }
+
+  gc(now);
   const existing = keyStore.get(rawKey);
   if (!existing) {
     keyStore.set(rawKey, { route, payloadHash, createdAtMs: now });
@@ -53,5 +112,6 @@ export async function enforceIdempotency(
       traceId
     );
   }
+
   return true;
 }

@@ -17,6 +17,13 @@ npm run dev
 
 Wrangler config is in `services/api/wrangler.toml`.
 
+## Persistence Bindings (Phase 2)
+
+- D1 binding: `CIOS_DB` (primary for idempotency + audit persistence)
+- KV binding: `CIOS_KV` (fallback persistence and TTL-based storage)
+
+If D1 is unavailable, worker falls back to KV; if KV is unavailable, it falls back to in-memory buffers.
+
 ## Current Status
 
 - Worker entry scaffolded in `services/api/src/worker.ts`

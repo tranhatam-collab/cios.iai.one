@@ -2,6 +2,7 @@ import { requireAuth, requireRole } from "./lib/auth";
 import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
 import { enforceIdempotency } from "./lib/idempotency";
+import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
 import { parseJsonBody } from "./lib/validation";
 
@@ -29,7 +30,7 @@ async function handleNotImplemented(route: string, traceId: string): Promise<Res
 }
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
     const traceId = request.headers.get("x-trace-id") ?? makeTraceId();
     const method = request.method.toUpperCase();
@@ -52,9 +53,9 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      const idem = await enforceIdempotency(request, path, parsed.value, traceId);
+      const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
       if (idem instanceof Response) return idem;
-      writeAudit({
+      await writeAudit({
         at: new Date().toISOString(),
         route: path,
         action: "event_ingest",
@@ -62,7 +63,7 @@ export default {
         role: auth.role,
         result: "success",
         traceId
-      });
+      }, env);
       return ok({ accepted: true, route: path }, { phase: "workers-contract", status: "stubbed" }, traceId);
     }
 
@@ -79,7 +80,7 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      writeAudit({
+      await writeAudit({
         at: new Date().toISOString(),
         route: path,
         action: "simulation_run",
@@ -87,7 +88,7 @@ export default {
         role: auth.role,
         result: "success",
         traceId
-      });
+      }, env);
       return ok(
         { simulation_id: crypto.randomUUID(), status: "queued" },
         { phase: "workers-contract", status: "stubbed" },
@@ -108,7 +109,7 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      writeAudit({
+      await writeAudit({
         at: new Date().toISOString(),
         route: path,
         action: "governance_approval",
@@ -116,7 +117,7 @@ export default {
         role: auth.role,
         result: "success",
         traceId
-      });
+      }, env);
       return ok(
         { approved: true, route: path, decision_id: crypto.randomUUID() },
         { phase: "workers-contract", status: "stubbed" },
@@ -137,9 +138,9 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      const idem = await enforceIdempotency(request, path, parsed.value, traceId);
+      const idem = await enforceIdempotency(request, path, parsed.value, traceId, env);
       if (idem instanceof Response) return idem;
-      writeAudit({
+      await writeAudit({
         at: new Date().toISOString(),
         route: path,
         action: "flow_dispatch",
@@ -147,7 +148,7 @@ export default {
         role: auth.role,
         result: "success",
         traceId
-      });
+      }, env);
       return ok(
         { flow_dispatch_id: crypto.randomUUID(), status: "accepted" },
         { phase: "workers-contract", status: "stubbed" },
@@ -162,7 +163,7 @@ export default {
         traceId
       );
       if ("response" in parsed) return parsed.response;
-      writeAudit({
+      await writeAudit({
         at: new Date().toISOString(),
         route: path,
         action: "flow_callback",
@@ -170,7 +171,7 @@ export default {
         role: "operator",
         result: "success",
         traceId
-      });
+      }, env);
       return ok(
         { callback_processed: true, flow_run_id: parsed.value.flow_run_id },
         { phase: "workers-contract", status: "stubbed" },
@@ -183,7 +184,8 @@ export default {
       if (auth instanceof Response) return auth;
       const roleOk = requireRole(auth, "governor", traceId);
       if (roleOk instanceof Response) return roleOk;
-      return ok(listAudit(100), { phase: "workers-contract", status: "memory-audit" }, traceId);
+      const entries = await listAudit(100, env);
+      return ok(entries, { phase: "workers-contract", status: env.CIOS_DB ? "d1-audit" : "fallback-audit" }, traceId);
     }
 
     return fail(404, "NOT_FOUND", "Route not found.", { method, path }, traceId);
