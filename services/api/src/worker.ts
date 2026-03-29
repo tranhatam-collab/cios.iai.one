@@ -8,7 +8,13 @@ import {
 } from "./lib/contracts";
 import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
-import { listFlowLogs, storeFlowLog, storeIngestEvent } from "./lib/domain-store";
+import {
+  getSystemMetrics,
+  listFlowLogs,
+  listHourlyReports,
+  storeFlowLog,
+  storeIngestEvent
+} from "./lib/domain-store";
 import { enforceIdempotency } from "./lib/idempotency";
 import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
@@ -64,15 +70,21 @@ async function handleSystemHealth(traceId: string): Promise<Response> {
   );
 }
 
-async function handleSystemMetrics(traceId: string): Promise<Response> {
+async function handleSystemMetrics(
+  traceId: string,
+  env: WorkerEnv,
+  from: string | null,
+  to: string | null
+): Promise<Response> {
+  const metrics = await getSystemMetrics({ from, to }, env);
   return ok(
     {
-      throughput_per_min: 18,
-      active_incidents: 2,
-      anomaly_count: 5,
-      queue_depth: 11
+      throughput_per_min: metrics.throughputPerMin,
+      active_incidents: metrics.activeIncidents,
+      anomaly_count: metrics.anomalyCount,
+      queue_depth: metrics.queueDepth
     },
-    {},
+    { source: env.CIOS_DB ? "d1-aggregated" : "fallback-aggregated", from, to },
     traceId
   );
 }
@@ -150,7 +162,8 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/system/metrics") {
-      return handleSystemMetrics(traceId);
+      const q = readListQuery(url);
+      return handleSystemMetrics(traceId, env, q.from, q.to);
     }
 
     if (method === "POST" && path === "/v1/events/ingest") {
@@ -398,16 +411,30 @@ export default {
       const auth = await authorize(request, traceId, env, "observer", path, "reports_hourly_read");
       if (auth instanceof Response) return auth;
       const q = readListQuery(url);
+      const reports = await listHourlyReports(
+        {
+          page: q.page,
+          pageSize: q.pageSize,
+          from: q.from,
+          to: q.to,
+          sortOrder: q.sortOrder
+        },
+        env
+      );
       return ok(
-        [
-          {
-            report_id: "hourly_001",
-            generated_at: new Date().toISOString(),
-            risk_summary: "medium",
-            anomaly_count: 5
-          }
-        ],
-        { pagination: { page: q.page, page_size: q.pageSize }, sort: { by: q.sortBy, order: q.sortOrder } },
+        reports.map((report) => ({
+          report_id: report.reportId,
+          generated_at: report.generatedAt,
+          bucket_start: report.bucketStart,
+          event_count: report.eventCount,
+          risk_summary: report.riskSummary,
+          anomaly_count: report.anomalyCount
+        })),
+        {
+          pagination: { page: q.page, page_size: q.pageSize },
+          sort: { by: q.sortBy, order: q.sortOrder },
+          source: env.CIOS_DB ? "d1-aggregated" : "fallback-aggregated"
+        },
         traceId
       );
     }

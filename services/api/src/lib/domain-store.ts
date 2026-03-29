@@ -19,6 +19,22 @@ type FlowLog = {
   payload?: unknown;
 };
 
+type SystemMetrics = {
+  throughputPerMin: number;
+  activeIncidents: number;
+  anomalyCount: number;
+  queueDepth: number;
+};
+
+type HourlyReport = {
+  reportId: string;
+  generatedAt: string;
+  bucketStart: string;
+  eventCount: number;
+  riskSummary: "low" | "medium" | "high";
+  anomalyCount: number;
+};
+
 const eventMemory: StoredEvent[] = [];
 const flowMemory: FlowLog[] = [];
 
@@ -196,4 +212,155 @@ export async function listFlowLogs(
 
   const start = (opts.page - 1) * opts.pageSize;
   return flowMemory.slice(start, start + opts.pageSize);
+}
+
+function parseIsoOrFallback(value: string | null, fallback: string): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toISOString();
+}
+
+function riskSummaryFromCounts(riskEvents: number, totalEvents: number): "low" | "medium" | "high" {
+  if (totalEvents <= 0) return "low";
+  const ratio = riskEvents / totalEvents;
+  if (ratio >= 0.35 || riskEvents >= 20) return "high";
+  if (ratio >= 0.15 || riskEvents >= 8) return "medium";
+  return "low";
+}
+
+export async function getSystemMetrics(
+  opts: { from: string | null; to: string | null },
+  env: WorkerEnv
+): Promise<SystemMetrics> {
+  const from = parseIsoOrFallback(opts.from, new Date(Date.now() - 60 * 60 * 1000).toISOString());
+  const to = parseIsoOrFallback(opts.to, new Date().toISOString());
+  const minutes = Math.max(1, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 60000));
+
+  if (env.CIOS_DB) {
+    try {
+      const eventsRow = await env.CIOS_DB.prepare(
+        "SELECT COUNT(*) AS count FROM api_events WHERE occurred_at >= ? AND occurred_at <= ?"
+      )
+        .bind(from, to)
+        .first<{ count: number | string }>();
+      const anomalyRow = await env.CIOS_DB.prepare(
+        "SELECT COUNT(*) AS count FROM api_events WHERE occurred_at >= ? AND occurred_at <= ? AND LOWER(event_type) LIKE '%anomaly%'"
+      )
+        .bind(from, to)
+        .first<{ count: number | string }>();
+      const incidentRow = await env.CIOS_DB.prepare(
+        "SELECT COUNT(*) AS count FROM api_audit_logs WHERE at >= ? AND at <= ? AND result = 'failed'"
+      )
+        .bind(from, to)
+        .first<{ count: number | string }>();
+      const queueRow = await env.CIOS_DB.prepare(
+        "SELECT COUNT(*) AS count FROM api_flow_logs WHERE completed_at >= ? AND completed_at <= ? AND status IN ('queued', 'running')"
+      )
+        .bind(from, to)
+        .first<{ count: number | string }>();
+
+      const eventCount = Number(eventsRow?.count ?? 0);
+      return {
+        throughputPerMin: Number((eventCount / minutes).toFixed(2)),
+        activeIncidents: Number(incidentRow?.count ?? 0),
+        anomalyCount: Number(anomalyRow?.count ?? 0),
+        queueDepth: Number(queueRow?.count ?? 0)
+      };
+    } catch {
+      // fallback
+    }
+  }
+
+  const eventSubset = eventMemory.filter((e) => e.occurredAt >= from && e.occurredAt <= to);
+  const anomalyCount = eventSubset.filter((e) => e.eventType.toLowerCase().includes("anomaly")).length;
+  const activeIncidents = 0;
+  const queueDepth = flowMemory.filter(
+    (f) => f.completedAt >= from && f.completedAt <= to && (f.status === "queued" || f.status === "running")
+  ).length;
+  return {
+    throughputPerMin: Number((eventSubset.length / minutes).toFixed(2)),
+    activeIncidents,
+    anomalyCount,
+    queueDepth
+  };
+}
+
+export async function listHourlyReports(
+  opts: {
+    page: number;
+    pageSize: number;
+    from: string | null;
+    to: string | null;
+    sortOrder: "asc" | "desc";
+  },
+  env: WorkerEnv
+): Promise<HourlyReport[]> {
+  const from = parseIsoOrFallback(opts.from, new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+  const to = parseIsoOrFallback(opts.to, new Date().toISOString());
+  const offset = (opts.page - 1) * opts.pageSize;
+  const order = opts.sortOrder === "asc" ? "ASC" : "DESC";
+
+  if (env.CIOS_DB) {
+    try {
+      const query = `
+        SELECT
+          strftime('%Y-%m-%dT%H:00:00.000Z', occurred_at) AS bucket_start,
+          COUNT(*) AS event_count,
+          SUM(CASE WHEN LOWER(event_type) LIKE '%risk%' THEN 1 ELSE 0 END) AS risk_event_count,
+          SUM(CASE WHEN LOWER(event_type) LIKE '%anomaly%' THEN 1 ELSE 0 END) AS anomaly_count
+        FROM api_events
+        WHERE occurred_at >= ? AND occurred_at <= ?
+        GROUP BY bucket_start
+        ORDER BY bucket_start ${order}
+        LIMIT ? OFFSET ?
+      `;
+      const result = await env.CIOS_DB.prepare(query).bind(from, to, opts.pageSize, offset).all<{
+        bucket_start: string;
+        event_count: number | string;
+        risk_event_count: number | string;
+        anomaly_count: number | string;
+      }>();
+
+      return (result.results ?? []).map((row, idx) => {
+        const eventCount = Number(row.event_count ?? 0);
+        const riskEvents = Number(row.risk_event_count ?? 0);
+        const anomalyCount = Number(row.anomaly_count ?? 0);
+        return {
+          reportId: `hourly_${opts.page}_${idx + 1}`,
+          generatedAt: new Date().toISOString(),
+          bucketStart: row.bucket_start,
+          eventCount,
+          riskSummary: riskSummaryFromCounts(riskEvents, eventCount),
+          anomalyCount
+        };
+      });
+    } catch {
+      // fallback
+    }
+  }
+
+  const buckets = new Map<string, { eventCount: number; riskEvents: number; anomalyCount: number }>();
+  for (const event of eventMemory) {
+    if (event.occurredAt < from || event.occurredAt > to) continue;
+    const date = new Date(event.occurredAt);
+    date.setUTCMinutes(0, 0, 0);
+    const key = date.toISOString();
+    const current = buckets.get(key) ?? { eventCount: 0, riskEvents: 0, anomalyCount: 0 };
+    current.eventCount += 1;
+    if (event.eventType.toLowerCase().includes("risk")) current.riskEvents += 1;
+    if (event.eventType.toLowerCase().includes("anomaly")) current.anomalyCount += 1;
+    buckets.set(key, current);
+  }
+
+  const rows = Array.from(buckets.entries()).map(([bucketStart, agg]) => ({
+    reportId: `hourly_mem_${bucketStart}`,
+    generatedAt: new Date().toISOString(),
+    bucketStart,
+    eventCount: agg.eventCount,
+    riskSummary: riskSummaryFromCounts(agg.riskEvents, agg.eventCount),
+    anomalyCount: agg.anomalyCount
+  }));
+  rows.sort((a, b) => (opts.sortOrder === "asc" ? (a.bucketStart < b.bucketStart ? -1 : 1) : a.bucketStart > b.bucketStart ? -1 : 1));
+  return rows.slice(offset, offset + opts.pageSize);
 }
