@@ -4,6 +4,12 @@ Backend foundation for the Customer Intelligence OS platform.
 
 Repository: [github.com/tranhatam-collab/cios.iai.one](https://github.com/tranhatam-collab/cios.iai.one)
 
+## Direction lock (must read first)
+
+- `docs/CIOS_MASTER_SPEC.md` — master direction, role in `*.iai.one`, mandatory layers/modules, and delivery phases.
+- `docs/DATA_MODEL.md` — locked canonical model and required core objects.
+- `docs/DELIVERY_ROADMAP.md` — execution roadmap from current baseline to full CIOS delivery.
+
 ## Setup
 
 1. Install dependencies:
