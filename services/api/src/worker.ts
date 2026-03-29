@@ -6,6 +6,30 @@ import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
 import { parseJsonBody } from "./lib/validation";
 
+function parsePositiveInt(value: string | null, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function readListQuery(url: URL): {
+  page: number;
+  pageSize: number;
+  from: string | null;
+  to: string | null;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+} {
+  const page = parsePositiveInt(url.searchParams.get("page"), 1);
+  const pageSize = Math.min(parsePositiveInt(url.searchParams.get("page_size"), 20), 100);
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
+  const sortBy = url.searchParams.get("sort_by") ?? "created_at";
+  const sortOrder = url.searchParams.get("sort_order") === "asc" ? "asc" : "desc";
+  return { page, pageSize, from, to, sortBy, sortOrder };
+}
+
 async function handleSystemState(traceId: string): Promise<Response> {
   return ok(
     {
@@ -15,6 +39,31 @@ async function handleSystemState(traceId: string): Promise<Response> {
       risk_level: "medium"
     },
     { contract: "phase2-workers-v1" },
+    traceId
+  );
+}
+
+async function handleSystemHealth(traceId: string): Promise<Response> {
+  return ok(
+    {
+      service: "cios-workers-api",
+      status: "healthy",
+      contract: "phase2-workers-v1"
+    },
+    {},
+    traceId
+  );
+}
+
+async function handleSystemMetrics(traceId: string): Promise<Response> {
+  return ok(
+    {
+      throughput_per_min: 18,
+      active_incidents: 2,
+      anomaly_count: 5,
+      queue_depth: 11
+    },
+    {},
     traceId
   );
 }
@@ -38,6 +87,14 @@ export default {
 
     if (method === "GET" && path === "/v1/system/state") {
       return handleSystemState(traceId);
+    }
+
+    if (method === "GET" && path === "/v1/system/health") {
+      return handleSystemHealth(traceId);
+    }
+
+    if (method === "GET" && path === "/v1/system/metrics") {
+      return handleSystemMetrics(traceId);
     }
 
     if (method === "POST" && path === "/v1/events/ingest") {
@@ -186,6 +243,46 @@ export default {
       if (roleOk instanceof Response) return roleOk;
       const entries = await listAudit(100, env);
       return ok(entries, { phase: "workers-contract", status: env.CIOS_DB ? "d1-audit" : "fallback-audit" }, traceId);
+    }
+
+    if (method === "GET" && path === "/v1/flow/logs") {
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "governor", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const q = readListQuery(url);
+      return ok(
+        [
+          {
+            flow_run_id: "flow_run_001",
+            trigger_name: "emergency-response",
+            status: "success",
+            completed_at: new Date().toISOString()
+          }
+        ],
+        { pagination: { page: q.page, page_size: q.pageSize }, filters: { from: q.from, to: q.to } },
+        traceId
+      );
+    }
+
+    if (method === "GET" && path === "/v1/reports/hourly") {
+      const auth = requireAuth(request, traceId);
+      if (auth instanceof Response) return auth;
+      const roleOk = requireRole(auth, "observer", traceId);
+      if (roleOk instanceof Response) return roleOk;
+      const q = readListQuery(url);
+      return ok(
+        [
+          {
+            report_id: "hourly_001",
+            generated_at: new Date().toISOString(),
+            risk_summary: "medium",
+            anomaly_count: 5
+          }
+        ],
+        { pagination: { page: q.page, page_size: q.pageSize }, sort: { by: q.sortBy, order: q.sortOrder } },
+        traceId
+      );
     }
 
     return fail(404, "NOT_FOUND", "Route not found.", { method, path }, traceId);
