@@ -1,4 +1,4 @@
-import { requireAuth, requireRole } from "./lib/auth";
+import { requireAuth, requireRole, type AuthContext, type Role } from "./lib/auth";
 import { fail, makeTraceId, ok } from "./lib/envelope";
 import { listAudit, writeAudit } from "./lib/audit";
 import { enforceIdempotency } from "./lib/idempotency";
@@ -78,6 +78,53 @@ async function handleNotImplemented(route: string, traceId: string): Promise<Res
   );
 }
 
+async function authorize(
+  request: Request,
+  traceId: string,
+  env: WorkerEnv,
+  minRole: Role,
+  route: string,
+  action: string
+): Promise<AuthContext | Response> {
+  const auth = await requireAuth(request, traceId, env);
+  if (auth instanceof Response) {
+    await writeAudit(
+      {
+        at: new Date().toISOString(),
+        route,
+        action,
+        actor: "anonymous",
+        role: "observer",
+        result: "failed",
+        traceId,
+        details: { reason: "unauthorized", status: auth.status }
+      },
+      env
+    );
+    return auth;
+  }
+
+  const roleOk = requireRole(auth, minRole, traceId);
+  if (roleOk instanceof Response) {
+    await writeAudit(
+      {
+        at: new Date().toISOString(),
+        route,
+        action,
+        actor: auth.subject,
+        role: auth.role,
+        result: "failed",
+        traceId,
+        details: { reason: "forbidden", required_role: minRole, status: roleOk.status }
+      },
+      env
+    );
+    return roleOk;
+  }
+
+  return auth;
+}
+
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
@@ -98,12 +145,10 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/events/ingest") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "operator", path, "event_ingest");
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 30, 60_000, traceId);
       if (rate instanceof Response) return rate;
-      const roleOk = requireRole(auth, "operator", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const parsed = await parseJsonBody<Record<string, unknown>>(
         request,
         ["source", "event_type", "occurred_at", "payload"],
@@ -125,12 +170,10 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/simulations/run") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "operator", path, "simulation_run");
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 20, 60_000, traceId);
       if (rate instanceof Response) return rate;
-      const roleOk = requireRole(auth, "operator", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const parsed = await parseJsonBody<Record<string, unknown>>(
         request,
         ["scenario_name", "base_state_ref", "input_parameters", "time_horizon"],
@@ -154,12 +197,10 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/governance/approvals") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "governor", path, "governance_approval");
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 10, 60_000, traceId);
       if (rate instanceof Response) return rate;
-      const roleOk = requireRole(auth, "governor", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const parsed = await parseJsonBody<Record<string, unknown>>(
         request,
         ["request_id", "decision", "reason"],
@@ -183,12 +224,10 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/flow/dispatch") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "governor", path, "flow_dispatch");
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 10, 60_000, traceId);
       if (rate instanceof Response) return rate;
-      const roleOk = requireRole(auth, "governor", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const parsed = await parseJsonBody<Record<string, unknown>>(
         request,
         ["trigger_name", "source_decision_id", "payload", "priority", "expected_callback", "requested_by"],
@@ -237,19 +276,15 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/governance/audit") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "governor", path, "governance_audit_read");
       if (auth instanceof Response) return auth;
-      const roleOk = requireRole(auth, "governor", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const entries = await listAudit(100, env);
       return ok(entries, { phase: "workers-contract", status: env.CIOS_DB ? "d1-audit" : "fallback-audit" }, traceId);
     }
 
     if (method === "GET" && path === "/v1/flow/logs") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "governor", path, "flow_logs_read");
       if (auth instanceof Response) return auth;
-      const roleOk = requireRole(auth, "governor", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const q = readListQuery(url);
       return ok(
         [
@@ -266,10 +301,8 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/reports/hourly") {
-      const auth = await requireAuth(request, traceId, env);
+      const auth = await authorize(request, traceId, env, "observer", path, "reports_hourly_read");
       if (auth instanceof Response) return auth;
-      const roleOk = requireRole(auth, "observer", traceId);
-      if (roleOk instanceof Response) return roleOk;
       const q = readListQuery(url);
       return ok(
         [
