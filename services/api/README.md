@@ -24,6 +24,16 @@ Wrangler config is in `services/api/wrangler.toml`.
 
 If D1 is unavailable, worker falls back to KV; if KV is unavailable, it falls back to in-memory buffers.
 
+## JWT Verification (Phase 2)
+
+- JWT verification mode: HS256
+- Required secret: `JWT_SECRET` (set via `wrangler secret put JWT_SECRET`)
+- Optional context checks:
+  - `JWT_ISSUER` (`iss` claim)
+  - `JWT_AUDIENCE` (`aud` claim)
+
+Role mapping accepts direct CIOS roles (`observer|operator|governor|root`) and maps legacy roles (`owner/admin/compliance_admin/sales_manager/sales_rep/...`) into the phase-2 role ladder.
+
 ## Current Status
 
 - Worker entry scaffolded in `services/api/src/worker.ts`

@@ -98,7 +98,7 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/events/ingest") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 30, 60_000, traceId);
       if (rate instanceof Response) return rate;
@@ -125,7 +125,7 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/simulations/run") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 20, 60_000, traceId);
       if (rate instanceof Response) return rate;
@@ -154,7 +154,7 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/governance/approvals") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 10, 60_000, traceId);
       if (rate instanceof Response) return rate;
@@ -183,7 +183,7 @@ export default {
     }
 
     if (method === "POST" && path === "/v1/flow/dispatch") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const rate = enforceRateLimit(`${path}:${auth.subject}:${auth.role}`, 10, 60_000, traceId);
       if (rate instanceof Response) return rate;
@@ -237,7 +237,7 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/governance/audit") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const roleOk = requireRole(auth, "governor", traceId);
       if (roleOk instanceof Response) return roleOk;
@@ -246,7 +246,7 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/flow/logs") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const roleOk = requireRole(auth, "governor", traceId);
       if (roleOk instanceof Response) return roleOk;
@@ -266,7 +266,7 @@ export default {
     }
 
     if (method === "GET" && path === "/v1/reports/hourly") {
-      const auth = requireAuth(request, traceId);
+      const auth = await requireAuth(request, traceId, env);
       if (auth instanceof Response) return auth;
       const roleOk = requireRole(auth, "observer", traceId);
       if (roleOk instanceof Response) return roleOk;

@@ -28,6 +28,7 @@ DEV must implement exactly from this contract before expanding simulation/govern
 ### Auth
 
 - Auth mechanism: JWT bearer
+- JWT verification: HS256 signature + `exp/nbf` checks + optional `iss/aud` checks (`JWT_ISSUER`, `JWT_AUDIENCE`)
 - RBAC roles:
   - `observer`
   - `operator`

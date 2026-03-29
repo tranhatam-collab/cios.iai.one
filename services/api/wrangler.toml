@@ -7,6 +7,8 @@ enabled = true
 
 [vars]
 API_CONTRACT = "phase2-workers-v1"
+JWT_ISSUER = "cios.iai.one"
+JWT_AUDIENCE = "cios-workers-api"
 
 [[d1_databases]]
 binding = "CIOS_DB"

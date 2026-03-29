@@ -2,6 +2,9 @@ export type WorkerEnv = {
   CIOS_DB?: D1Database;
   CIOS_KV?: KVNamespace;
   API_CONTRACT?: string;
+  JWT_SECRET?: string;
+  JWT_ISSUER?: string;
+  JWT_AUDIENCE?: string;
 };
 
 let initPromise: Promise<void> | null = null;
