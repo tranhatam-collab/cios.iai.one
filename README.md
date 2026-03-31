@@ -1,109 +1,41 @@
-# Customer Intelligence OS API
+# CIOS.IAI.ONE – Constitutional Intelligence Operating System
 
-Backend foundation for the Customer Intelligence OS platform.
+**Hệ điều hành Trí tuệ Tuân thủ Hiến pháp** – AI Agent Flow Control Layer của IAI.ONE.
 
-Repository: [github.com/tranhatam-collab/cios.iai.one](https://github.com/tranhatam-collab/cios.iai.one)
+## Vision
 
-## Direction lock (must read first)
+Mọi Agent swarm đều **bắt buộc tuân thủ Charter cá nhân on-chain** (từ i ai.one).
 
-- `docs/CIOS_MASTER_SPEC.md` — master direction, role in `*.iai.one`, mandatory layers/modules, and delivery phases.
-- `docs/DATA_MODEL.md` — locked canonical model and required core objects.
-- `docs/DELIVERY_ROADMAP.md` — execution roadmap from current baseline to full CIOS delivery.
+## Tech Stack
 
-## Setup
+- Frontend: Next.js 15 + React 19 (CF Pages)
+- State: Zustand + Tanstack Query
+- Auth: Privy + WalletConnect
+- Backend: CF Worker (`api.cios.iai.one`)
+- On-chain: Base + IAI token (Charter NFT)
+- Physical: Peaq SDK + WebLLM (on-device)
 
-1. Install dependencies:
+## Quick Start (DEV)
 
-```bash
-npm install
+1. `pnpm install`
+2. `cp .env.example .env`
+3. `pnpm dev`
+
+## Structure
+
+```text
+/app
+  /dashboard     ← Main shell
+  /charter       ← Constitutional panel
+  /agents        ← Swarm manager
+/components
+  /charter-enforcement
+/public
+  /tokens.css    ← Design tokens global
 ```
 
-2. Copy environment file:
+## Contributing
 
-```bash
-cp .env.example .env
-```
+Tuân thủ Charter IAI.ONE. Mọi PR phải pass Charter Enforcement check.
 
-Edit `.env` (database, secrets, and `CLOUDFLARE_ACCOUNT_ID` if you use Wrangler with multiple accounts).
-
-3. Start in development mode:
-
-```bash
-npm run dev
-```
-
-## Useful scripts
-
-- `npm run dev`: start API in watch mode
-- `npm run build`: compile TypeScript to `dist`
-- `npm run typecheck`: run TypeScript type checks
-- `npm test`: run Vitest
-- `npm run db:migrate`: run SQL migrations in `migrations/`
-- `npm run sync:site-version`: write `site/version.json` from `package.json`
-- `npm run deploy:pages`: deploy the static `site/` folder to Cloudflare Pages (runs `sync:site-version` first; requires Wrangler login and `CLOUDFLARE_ACCOUNT_ID` in `.env` when multiple accounts exist)
-
-## API versioning (semantic, monotonic)
-
-- **Package & API** follow **semver** in `package.json`. Public REST surface is namespaced under **`/v1`**; breaking HTTP changes ship as **`/v2`** later, not silent breaks.
-- **Policy:** each tagged release is expected to be a **complete superset** of the previous one for supported clients (new capabilities additive; deprecations documented).
-- **Discovery:** `GET /v1/meta` — version, optional git SHA (`GITHUB_SHA` / `CI_COMMIT_SHA`), `apiCompat`, and capability flags for clients (web / future mobile).
-- **Headers** on all responses: `X-App-Version` (semver), `X-API-Compat` (`v1`).
-
-## Health endpoints
-
-- `GET /health`
-- `GET /health/db` (requires PostgreSQL reachable via `DATABASE_URL`)
-- `GET /v1/compliance/policies` (returns legal/compliance links for web shell)
-- `POST /v1/auth/register`, `POST /v1/auth/session`, `GET /v1/auth/me`, `GET /v1/auth/audit`
-- `GET /v1/members/plans`
-- `GET /v1/crm/organizations`, `GET /v1/crm/organizations/:id`
-- `GET /v1/compliance/audit-log`, `GET /v1/compliance/retention-rules`
-- `GET /v1/discovery/sources`, `GET /v1/discovery/crawl-governance`
-
-Notes:
-
-- `crm`, `compliance/audit-log`, `compliance/retention-rules`, and `discovery/*` endpoints require a Bearer JWT from `POST /v1/auth/session`.
-- RBAC rules:
-  - `crm/*`: `owner`, `admin`, `sales_manager`, `sales_rep`
-  - `compliance/audit-log`, `compliance/retention-rules`, `auth/audit`: `owner`, `admin`, `compliance_admin`
-  - `discovery/*`: `owner`, `admin`, `compliance_admin`, `sales_manager`
-- Run `npm run db:migrate` to apply schema/seed for Sprint 3 (plans, organizations, audit logs, retention rules, discovery queue).
-  Sprint 4 adds `auth_session_audit_logs` migration for login/session trail.
-
-## Cloudflare Pages (static shell)
-
-The `site/` directory is a **responsive, mobile-style shell** (safe areas, 44px touch targets, bottom nav) with **PWA manifest** and a small **`/js/app.js` feature registry** (`window.CIOS`) so new UI modules can mount without rewriting the shell — aligned with a future native wrapper (e.g. Capacitor / React Native WebView).
-
-`npm run sync:site-version` writes `site/version.json` from `package.json` (also run automatically before `npm run deploy:pages` and in CI before Pages upload).
-
-Compliance pages currently shipped in `site/legal/`:
-
-- `privacy.html`
-- `terms.html`
-- `data-source-policy.html`
-- `suppression-list.html`
-- `deletion-request.html`
-- `right-to-object.html`
-
-Production URL:
-
-- [https://cios-iai-one.pages.dev](https://cios-iai-one.pages.dev)
-
-The API itself runs as a Node process (not on Pages). Use your own host or container platform for `npm start` and point DNS or a reverse proxy as needed.
-
-### GitHub Actions: auto deploy on push
-
-On `main` and `dev`, CI runs typecheck, build, and tests. After a green CI run, the workflow deploys `site/` to Cloudflare Pages.
-
-Add repository secret **CLOUDFLARE_API_TOKEN** with:
-
-- Cloudflare API token permissions: **Account** → **Cloudflare Pages** → **Edit** (and any other scopes your org requires for Wrangler).
-
-Without this secret, the deploy job fails until the token is configured.
-
-You can also run the workflow manually: **Actions → CI → Run workflow**.
-
-### Custom domain (gắn khi nào?)
-
-- **Dev / test / CI xanh**: dùng URL có sẵn `https://cios-iai-one.pages.dev` là đủ, **không cần** gắn domain riêng.
-- **Khi cần gắn domain** (ví dụ `cios.iai.one` hoặc `api.*`): khi bạn muốn thương hiệu, DNS riêng, hoặc TLS theo hostname tùy chọn. Lúc đó vào Cloudflare Dashboard → **Workers & Pages** → project **cios-iai-one** → **Custom domains** → thêm zone/DNS theo hướng dẫn. **Báo mình khi bạn chọn tên miền cụ thể** để cấu hình DNS/CNAME đúng (thường CNAME tới `cios-iai-one.pages.dev` hoặc bản ghi Cloudflare chỉ định).
+Phiên bản hiện tại: v1.1.0 → Target v2.0.0 “Constitutional Launch”

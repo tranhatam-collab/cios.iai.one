@@ -1,5 +1,9 @@
 # CIOS — BUILD ORDER LOCK
 
+**Bổ sung bắt buộc (FINAL LOCK, logic IAI):** xem `docs/CIOS_SYSTEM_UPGRADE_FINAL_LOCK.md` — event bus/streaming, warehouse semantic + lineage, simulation trên snapshot, governance gắn decision lifecycle, feedback loop Flow → CIOS. Thứ tự 5 bước bên dưới **không đổi**; phạm vi từng bước phải đủ theo file đó để không build thành “dashboard” thay vì OS.
+
+---
+
 Phạm vi khóa chính thức cho DEV.
 
 CIOS phải được xây như một Civilization Intelligence Operating System, không phải landing page, không phải dashboard BI, không phải CRM, không phải analytics panel thông thường.
@@ -297,6 +301,8 @@ Mọi route phải thống nhất:
 ---
 
 ## 3) BUILD APP UI
+
+**Spec UI đầy đủ (app + Flow Connect + Admin):** `docs/CIOS_APP_UI_MASTER.md`.
 
 ### 3.1 Mục tiêu
 
