@@ -8,6 +8,7 @@ process.env.DATABASE_URL ??= "postgres://postgres:postgres@localhost:5432/test";
 process.env.JWT_SECRET ??= "test-jwt-secret-ci-only";
 process.env.SESSION_SECRET ??= "test-session-secret-ci-only";
 process.env.LOG_LEVEL ??= "silent";
+process.env.FLOW_WEBHOOK_SECRET ??= "test-flow-webhook-secret";
 
 afterAll(async () => {
   const { dbPool } = await import("../src/bootstrap/db.js");

@@ -4,21 +4,29 @@ import helmet from "@fastify/helmet";
 import jwt from "@fastify/jwt";
 import Fastify from "fastify";
 
+import { registerRealtimeStreamRoute } from "./realtime-stream.js";
 import { env } from "../bootstrap/env.js";
 import { logger } from "../bootstrap/logger.js";
 import { getApiCompat } from "../core/release.js";
 import { registerVersionHeaders } from "./version-headers.js";
 import { registerHealthRoutes } from "../interfaces/http/routes/health.routes.js";
 import { registerV1AuthRoutes } from "../interfaces/http/routes/v1/auth.routes.js";
+import { registerV1CeeRoutes } from "../interfaces/http/routes/v1/cee.routes.js";
 import { registerV1ComplianceRoutes } from "../interfaces/http/routes/v1/compliance.routes.js";
 import { registerV1CrmRoutes } from "../interfaces/http/routes/v1/crm.routes.js";
 import { registerV1DiscoveryRoutes } from "../interfaces/http/routes/v1/discovery.routes.js";
+import { registerV1FlowRoutes } from "../interfaces/http/routes/v1/flow.routes.js";
 import { registerV1MemberRoutes } from "../interfaces/http/routes/v1/member.routes.js";
 import { registerV1MetaRoutes } from "../interfaces/http/routes/v1/meta.routes.js";
+import { registerV1ReviewRoutes } from "../interfaces/http/routes/v1/review.routes.js";
 
 export async function createApp() {
   const app = Fastify({
-    loggerInstance: logger
+    loggerInstance: logger,
+  });
+
+  app.addHook("onRequest", async (request, reply) => {
+    reply.header("x-request-id", request.id);
   });
 
   registerVersionHeaders(app);
@@ -27,6 +35,8 @@ export async function createApp() {
   await app.register(helmet);
   await app.register(cookie);
   await app.register(jwt, { secret: env.JWT_SECRET });
+
+  await registerRealtimeStreamRoute(app);
 
   await registerHealthRoutes(app);
 
@@ -38,8 +48,11 @@ export async function createApp() {
       await registerV1CrmRoutes(v1);
       await registerV1ComplianceRoutes(v1);
       await registerV1DiscoveryRoutes(v1);
+      await registerV1FlowRoutes(v1);
+      await registerV1CeeRoutes(v1);
+      await registerV1ReviewRoutes(v1);
     },
-    { prefix: `/${getApiCompat()}` }
+    { prefix: `/${getApiCompat()}` },
   );
 
   return app;
