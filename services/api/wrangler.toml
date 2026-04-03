@@ -15,8 +15,8 @@ JWT_AUDIENCE = "cios-workers-api"
 [[d1_databases]]
 binding = "CIOS_DB"
 database_name = "cios-workers-api-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "5ccf0c5b-cbd4-42b5-a66b-5c089267e311"
 
 [[kv_namespaces]]
 binding = "CIOS_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "a5293161814747568d3774a69f8456ad"

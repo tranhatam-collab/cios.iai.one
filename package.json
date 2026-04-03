@@ -14,6 +14,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "db:migrate": "tsx src/scripts/run-migrations.ts",
+    "smoke:workers": "bash scripts/smoke-workers-e2e.sh",
+    "smoke:workers:strict": "bash scripts/smoke-workers-e2e.sh --strict",
     "predeploy:pages": "npm run sync:site-version",
     "deploy:pages": "wrangler pages deploy site --project-name=cios-iai-one"
   },
