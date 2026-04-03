@@ -18,17 +18,28 @@ describe("GET /v1/meta", () => {
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body) as {
       ok: boolean;
-      release: { version: string; apiCompat: string };
-      capabilities: { restPrefix: string; moduleRegistry: boolean; complianceCenter: boolean };
-      client: { extensionPoints: string[] };
+      data: {
+        release: { version: string; apiCompat: string };
+        capabilities: {
+          restPrefix: string;
+          moduleRegistry: boolean;
+          complianceCenter: boolean;
+        };
+        client: { extensionPoints: string[] };
+      };
+      request_id: string;
+      meta: { request_id: string };
     };
     expect(body.ok).toBe(true);
-    expect(body.release.apiCompat).toBe("v1");
-    expect(body.release.version).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(body.capabilities.restPrefix).toBe("/v1");
-    expect(body.capabilities.moduleRegistry).toBe(true);
-    expect(body.capabilities.complianceCenter).toBe(true);
-    expect(body.client.extensionPoints).toContain("/v1/compliance/policies");
+    expect(body.data.release.apiCompat).toBe("v1");
+    expect(body.data.release.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(body.data.capabilities.restPrefix).toBe("/v1");
+    expect(body.data.capabilities.moduleRegistry).toBe(true);
+    expect(body.data.capabilities.complianceCenter).toBe(true);
+    expect(body.data.client.extensionPoints).toContain(
+      "/v1/compliance/policies",
+    );
+    expect(body.meta.request_id).toBe(body.request_id);
   });
 });
 
@@ -62,18 +73,24 @@ describe("GET /v1/compliance/policies", () => {
   });
 
   it("returns legal policy links and compliance controls", async () => {
-    const res = await app.inject({ method: "GET", url: "/v1/compliance/policies" });
+    const res = await app.inject({
+      method: "GET",
+      url: "/v1/compliance/policies",
+    });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body) as {
       ok: boolean;
-      policies: Array<{ key: string; path: string }>;
-      controls: string[];
+      data: {
+        policies: Array<{ key: string; path: string }>;
+        controls: string[];
+      };
     };
     expect(body.ok).toBe(true);
-    expect(body.policies.length).toBeGreaterThanOrEqual(6);
-    expect(body.policies.find((policy) => policy.key === "privacy-policy")?.path).toBe(
-      "/legal/privacy.html"
-    );
-    expect(body.controls).toContain("robots-compliance-check");
+    expect(body.data.policies.length).toBeGreaterThanOrEqual(6);
+    expect(
+      body.data.policies.find((policy) => policy.key === "privacy-policy")
+        ?.path,
+    ).toBe("/legal/privacy.html");
+    expect(body.data.controls).toContain("robots-compliance-check");
   });
 });

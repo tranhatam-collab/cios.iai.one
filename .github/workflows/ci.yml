@@ -38,11 +38,36 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ci
           JWT_SECRET: ci-jwt-secret
           SESSION_SECRET: ci-session-secret
+          FLOW_WEBHOOK_SECRET: ci-flow-webhook-secret
           LOG_LEVEL: silent
+
+  smoke-workers-strict:
+    name: Smoke Workers Strict
+    needs: build-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke workers strict
+        run: npm run smoke:workers:strict
+        env:
+          JWT_SECRET: ${{ secrets.SMOKE_WORKERS_JWT_SECRET }}
+          WORKERS_API_URL: ${{ secrets.SMOKE_WORKERS_API_URL }}
 
   deploy-pages:
     name: Deploy Cloudflare Pages
-    needs: build-test
+    needs: [build-test, smoke-workers-strict]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:

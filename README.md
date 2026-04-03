@@ -21,6 +21,12 @@ Mọi Agent swarm đều **bắt buộc tuân thủ Charter cá nhân on-chain**
 2. `cp .env.example .env`
 3. `pnpm dev`
 
+## Runbooks
+
+- Deploy + smoke runbook: `docs/DEPLOY_AND_SMOKE_RUNBOOK.md`
+- Workers smoke (normal): `npm run smoke:workers`
+- Workers smoke (strict): `npm run smoke:workers:strict`
+
 ## Structure
 
 ```text

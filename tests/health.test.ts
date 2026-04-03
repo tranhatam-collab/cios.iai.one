@@ -16,8 +16,17 @@ describe("GET /health", () => {
   it("returns ok", async () => {
     const res = await app.inject({ method: "GET", url: "/health" });
     expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body) as { ok: boolean; service: string };
+    const body = JSON.parse(res.body) as {
+      ok: boolean;
+      data: { service: string };
+      request_id: string;
+      meta: { request_id: string };
+      error: null;
+    };
     expect(body.ok).toBe(true);
-    expect(body.service).toBe("customer-intelligence-os-api");
+    expect(body.data.service).toBe("customer-intelligence-os-api");
+    expect(body.request_id.length).toBeGreaterThan(0);
+    expect(body.meta.request_id).toBe(body.request_id);
+    expect(body.error).toBeNull();
   });
 });
