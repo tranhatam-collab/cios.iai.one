@@ -1,41 +1,51 @@
 import type { FastifyInstance } from "fastify";
 
-import { requireRoles } from "../../../../app/auth-guard.js";
+import { ACTIONS, requireAction } from "../../../../app/permissions.js";
 import {
   getComplianceAuditLog,
   getCompliancePolicies,
-  getRetentionRules
+  getRetentionRules,
 } from "../../../../repositories/compliance.repository.js";
+import { envelopeOk } from "../../response-envelope.js";
 
-export async function registerV1ComplianceRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/compliance/policies", async () => {
+export async function registerV1ComplianceRoutes(
+  app: FastifyInstance,
+): Promise<void> {
+  app.get("/compliance/policies", async (request) => {
     const policies = getCompliancePolicies();
-    return {
-      ok: true,
+    return envelopeOk(request, {
       policies,
-      controls: ["audit-logs", "retention-rules", "source-lineage", "robots-compliance-check", "review-queue"]
-    };
+      controls: [
+        "audit-logs",
+        "retention-rules",
+        "source-lineage",
+        "robots-compliance-check",
+        "review-queue",
+      ],
+    });
   });
 
   app.get("/compliance/audit-log", async (request, reply) => {
-    const user = await requireRoles(request, reply, ["owner", "admin", "compliance_admin"]);
+    const user = await requireAction(
+      request,
+      reply,
+      ACTIONS.complianceAuditRead,
+    );
     if (!user) return;
     const workspaceCode = user.workspaceCode ?? "demo";
     const entries = await getComplianceAuditLog(workspaceCode);
-    return {
-      ok: true,
-      entries
-    };
+    return envelopeOk(request, { entries });
   });
 
   app.get("/compliance/retention-rules", async (request, reply) => {
-    const user = await requireRoles(request, reply, ["owner", "admin", "compliance_admin"]);
+    const user = await requireAction(
+      request,
+      reply,
+      ACTIONS.complianceRetentionRead,
+    );
     if (!user) return;
     const workspaceCode = user.workspaceCode ?? "demo";
     const rules = await getRetentionRules(workspaceCode);
-    return {
-      ok: true,
-      rules
-    };
+    return envelopeOk(request, { rules });
   });
 }

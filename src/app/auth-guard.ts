@@ -1,5 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 
+import { ERROR_CODES } from "./error-codes.js";
+import { envelopeError } from "../interfaces/http/response-envelope.js";
+
 export type WorkspaceRole =
   | "owner"
   | "admin"
@@ -37,13 +40,18 @@ function roleMatches(pattern: RolePattern, role: string | undefined): boolean {
 
 export async function requireAuth(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<TokenUser | null> {
   try {
     await request.jwtVerify<TokenUser>();
     return request.user as TokenUser;
   } catch {
-    await reply.status(401).send({ ok: false, error: "unauthorized" });
+    await reply.status(401).send(
+      envelopeError(request, {
+        code: ERROR_CODES.authUnauthorized,
+        message: "Missing or invalid authentication.",
+      }),
+    );
     return null;
   }
 }
@@ -51,7 +59,7 @@ export async function requireAuth(
 export async function requireRoles(
   request: FastifyRequest,
   reply: FastifyReply,
-  allowed: RolePattern[]
+  allowed: RolePattern[],
 ): Promise<TokenUser | null> {
   const user = await requireAuth(request, reply);
   if (!user) {
@@ -61,9 +69,11 @@ export async function requireRoles(
   const ok = allowed.some((pattern) => roleMatches(pattern, user.role));
   if (!ok) {
     await reply.status(403).send({
-      ok: false,
-      error: "forbidden",
-      requiredRoles: allowed
+      ...envelopeError(request, {
+        code: ERROR_CODES.authForbidden,
+        message: "Insufficient role permissions.",
+        details: { requiredRoles: allowed },
+      }),
     });
     return null;
   }

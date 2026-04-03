@@ -2,19 +2,21 @@ import type { FastifyInstance } from "fastify";
 
 import { env } from "../../../../bootstrap/env.js";
 import { getReleaseInfo } from "../../../../core/release.js";
+import { envelopeOk } from "../../response-envelope.js";
 
-export async function registerV1MetaRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/meta", async () => {
+export async function registerV1MetaRoutes(
+  app: FastifyInstance,
+): Promise<void> {
+  app.get("/meta", async (request) => {
     const r = getReleaseInfo();
-    return {
-      ok: true,
+    return envelopeOk(request, {
       service: env.APP_NAME,
       release: {
         name: r.name,
         version: r.version,
         apiCompat: r.apiCompat,
         commit: r.commit,
-        environment: r.environment
+        environment: r.environment,
       },
       client: {
         webShell: "site/",
@@ -27,8 +29,8 @@ export async function registerV1MetaRoutes(app: FastifyInstance): Promise<void> 
           "/v1/members/plans",
           "/v1/crm/organizations",
           "/v1/compliance/policies",
-          "/v1/discovery/sources"
-        ]
+          "/v1/discovery/sources",
+        ],
       },
       capabilities: {
         restPrefix: `/${r.apiCompat}`,
@@ -37,8 +39,8 @@ export async function registerV1MetaRoutes(app: FastifyInstance): Promise<void> 
         complianceCenter: true,
         authAndMemberPlans: true,
         crmPreview: true,
-        sourceDiscoveryGovernance: true
-      }
-    };
+        sourceDiscoveryGovernance: true,
+      },
+    });
   });
 }

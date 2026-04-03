@@ -1,9 +1,18 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { requireAuth, requireRoles, type WorkspaceRole } from "../../../../app/auth-guard.js";
-import { listAuthAudit, recordAuthAudit } from "../../../../repositories/auth-audit.repository.js";
-import { loginMember, registerMember } from "../../../../repositories/auth.repository.js";
+import { requireAuth, type WorkspaceRole } from "../../../../app/auth-guard.js";
+import { ERROR_CODES } from "../../../../app/error-codes.js";
+import { ACTIONS, requireAction } from "../../../../app/permissions.js";
+import { envelopeError, envelopeOk } from "../../response-envelope.js";
+import {
+  listAuthAudit,
+  recordAuthAudit,
+} from "../../../../repositories/auth-audit.repository.js";
+import {
+  loginMember,
+  registerMember,
+} from "../../../../repositories/auth.repository.js";
 
 const RegisterInput = z.object({
   email: z.string().email(),
@@ -11,14 +20,22 @@ const RegisterInput = z.object({
   displayName: z.string().min(1).max(80).default("Member"),
   workspaceCode: z.string().min(2).max(64).default("demo"),
   role: z
-    .enum(["owner", "admin", "compliance_admin", "sales_manager", "sales_rep", "analyst", "readonly"])
-    .default("sales_rep")
+    .enum([
+      "owner",
+      "admin",
+      "compliance_admin",
+      "sales_manager",
+      "sales_rep",
+      "analyst",
+      "readonly",
+    ])
+    .default("sales_rep"),
 });
 
 const SessionInput = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  workspaceCode: z.string().min(2).max(64).default("demo")
+  workspaceCode: z.string().min(2).max(64).default("demo"),
 });
 
 type MemberPayload = {
@@ -32,7 +49,9 @@ type MemberPayload = {
   plan: string;
 };
 
-export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> {
+export async function registerV1AuthRoutes(
+  app: FastifyInstance,
+): Promise<void> {
   app.post("/auth/register", async (request, reply) => {
     const parsed = RegisterInput.safeParse(request.body);
     if (!parsed.success) {
@@ -41,13 +60,15 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
         result: "failed",
         reason: "invalid_payload",
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
-      return reply.status(400).send({
-        ok: false,
-        error: "invalid_payload",
-        details: parsed.error.flatten()
-      });
+      return reply.status(400).send(
+        envelopeError(request, {
+          code: ERROR_CODES.validationFailed,
+          message: "Invalid register payload.",
+          details: parsed.error.flatten(),
+        }),
+      );
     }
 
     const body = parsed.data;
@@ -61,12 +82,21 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
         result: "failed",
         reason: created.error,
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
-      return reply.status(created.error === "email_exists" ? 409 : 404).send({
-        ok: false,
-        error: created.error
-      });
+      return reply.status(created.error === "email_exists" ? 409 : 404).send(
+        envelopeError(request, {
+          code:
+            created.error === "email_exists"
+              ? ERROR_CODES.authEmailExists
+              : ERROR_CODES.workspaceNotFound,
+          message:
+            created.error === "email_exists"
+              ? "Email already exists in workspace."
+              : "Workspace not found.",
+          details: { reason: created.error },
+        }),
+      );
     }
 
     await recordAuthAudit({
@@ -77,13 +107,10 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
       event: "register",
       result: "success",
       ip: request.ip,
-      userAgent: request.headers["user-agent"]
+      userAgent: request.headers["user-agent"],
     });
 
-    return {
-      ok: true,
-      member: created.member
-    };
+    return envelopeOk(request, { member: created.member });
   });
 
   app.post("/auth/session", async (request, reply) => {
@@ -94,13 +121,15 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
         result: "failed",
         reason: "invalid_payload",
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
-      return reply.status(400).send({
-        ok: false,
-        error: "invalid_payload",
-        details: parsed.error.flatten()
-      });
+      return reply.status(400).send(
+        envelopeError(request, {
+          code: ERROR_CODES.validationFailed,
+          message: "Invalid session payload.",
+          details: parsed.error.flatten(),
+        }),
+      );
     }
 
     const login = await loginMember(parsed.data);
@@ -112,9 +141,15 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
         result: "failed",
         reason: login.error,
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
-      return reply.status(401).send({ ok: false, error: login.error });
+      return reply.status(401).send(
+        envelopeError(request, {
+          code: ERROR_CODES.authInvalidCredentials,
+          message: "Invalid credentials.",
+          details: { reason: login.error },
+        }),
+      );
     }
 
     const member: MemberPayload = {
@@ -125,7 +160,7 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
       email: login.member.email,
       name: login.member.displayName,
       role: login.member.role,
-      plan: login.member.plan
+      plan: login.member.plan,
     };
 
     const token = await reply.jwtSign(member, { expiresIn: "12h" });
@@ -137,14 +172,10 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
       event: "login",
       result: "success",
       ip: request.ip,
-      userAgent: request.headers["user-agent"]
+      userAgent: request.headers["user-agent"],
     });
 
-    return {
-      ok: true,
-      token,
-      member
-    };
+    return envelopeOk(request, { token, member });
   });
 
   app.get("/auth/me", async (request, reply) => {
@@ -155,7 +186,7 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
         result: "failed",
         reason: "unauthorized",
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
       return;
     }
@@ -168,20 +199,20 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
       event: "me",
       result: "success",
       ip: request.ip,
-      userAgent: request.headers["user-agent"]
+      userAgent: request.headers["user-agent"],
     });
-    return { ok: true, member: user };
+    return envelopeOk(request, { member: user });
   });
 
   app.get("/auth/audit", async (request, reply) => {
-    const user = await requireRoles(request, reply, ["owner", "admin", "compliance_admin"]);
+    const user = await requireAction(request, reply, ACTIONS.authAuditRead);
     if (!user) {
       await recordAuthAudit({
         event: "auth_audit_read",
         result: "failed",
         reason: "forbidden_or_unauthorized",
         ip: request.ip,
-        userAgent: request.headers["user-agent"]
+        userAgent: request.headers["user-agent"],
       });
       return;
     }
@@ -195,12 +226,9 @@ export async function registerV1AuthRoutes(app: FastifyInstance): Promise<void> 
       event: "auth_audit_read",
       result: "success",
       ip: request.ip,
-      userAgent: request.headers["user-agent"]
+      userAgent: request.headers["user-agent"],
     });
 
-    return {
-      ok: true,
-      entries
-    };
+    return envelopeOk(request, { entries });
   });
 }
