@@ -9,6 +9,8 @@ import {
 import { envelopeError } from "../interfaces/http/response-envelope.js";
 
 export const ACTIONS = {
+  bootstrapRead: "bootstrap.read",
+  overviewRead: "overview.read",
   authAuditRead: "auth.audit.read",
   memberPlansRead: "member.plans.read",
   crmOrganizationsRead: "crm.organizations.read",
@@ -29,6 +31,30 @@ export const ACTIONS = {
 export type AppAction = (typeof ACTIONS)[keyof typeof ACTIONS];
 
 const permissionMatrix: Record<AppAction, WorkspaceRole[]> = {
+  [ACTIONS.bootstrapRead]: [
+    "owner",
+    "admin",
+    "compliance_admin",
+    "sales_manager",
+    "sales_rep",
+    "analyst",
+    "reviewer",
+    "finance",
+    "support",
+    "readonly",
+  ],
+  [ACTIONS.overviewRead]: [
+    "owner",
+    "admin",
+    "compliance_admin",
+    "sales_manager",
+    "sales_rep",
+    "analyst",
+    "reviewer",
+    "finance",
+    "support",
+    "readonly",
+  ],
   [ACTIONS.authAuditRead]: ["owner", "admin", "compliance_admin"],
   [ACTIONS.memberPlansRead]: [
     "owner",
@@ -123,6 +149,12 @@ const permissionMatrix: Record<AppAction, WorkspaceRole[]> = {
 
 export function getAllowedRoles(action: AppAction): WorkspaceRole[] {
   return permissionMatrix[action];
+}
+
+export function getPermissionsForRole(role: WorkspaceRole): AppAction[] {
+  return (Object.keys(permissionMatrix) as AppAction[]).filter((action) =>
+    permissionMatrix[action].includes(role),
+  );
 }
 
 export async function requireAction(

@@ -172,3 +172,19 @@ Live updates temporarily unavailable
 ## 10. Message chot gui DEV
 
 Phase 0 is not about adding more features. It is about turning the current live shell into a usable product. The app must stop feeling like a technical preview with broken modules and start behaving like a real operating system front. Prioritize bootstrap truth, CRM read surfaces, compliance read surfaces, source governance read surfaces, minimum useful realtime, constitutional review states, and a rewritten homepage. Remove endless loading placeholders from the user experience. A beautiful shell with unavailable APIs has zero product value. A narrower but working product has real value immediately.
+
+## 11. Implementation status (current)
+
+Da bat dau Day 1 va khoa contract can thiet:
+
+- `GET /v1/bootstrap`: da co contract user/workspace/role/permissions/nav/modules/context.
+- `GET /v1/overview`: da co snapshot tong hop CRM/compliance/discovery/decision/realtime/status.
+
+Da co test contract:
+
+- `tests/bootstrap-overview.test.ts`
+
+Tiep theo de chot Day 1-2:
+
+- Noi `site/js/app.js` (hoac `/app`) vao `/v1/bootstrap` de dung context that thay vi hardcode.
+- Them pagination contract cho `/v1/crm/organizations` (page, page_size, total).
