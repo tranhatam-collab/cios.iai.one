@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0c1324" />
+    <title>CIOS App</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <a class="cios-skip" href="#app-main">Bỏ qua điều hướng</a>
+    <div class="cios-app" data-app="cios-runtime-shell">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <strong>CIOS App</strong>
+          <span data-i18n="app.header.subtitle"
+            >Operational shell for intelligence and decisions</span
+          >
+        </div>
+        <div class="cios-header-right">
+          <button
+            class="cios-pill cios-lang-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Chuyển sang tiếng Anh / Switch to English"
+          >
+            🇻🇳 Tiếng Việt
+          </button>
+          <span class="cios-version" data-version-label>v--</span>
+        </div>
+      </header>
+
+      <main class="cios-main" id="app-main" role="main" tabindex="-1">
+        <section class="cios-section">
+          <h1 data-i18n="app.hero.title">Ứng dụng CIOS</h1>
+          <p data-i18n="app.hero.subtitle">
+            Đây là app shell đang nối trực tiếp với bootstrap và overview
+            contract từ Workers API.
+          </p>
+          <div class="cios-cta-group">
+            <a
+              class="cios-btn cios-btn-secondary"
+              href="/"
+              data-i18n="app.hero.back"
+              >Về trang chủ</a
+            >
+            <a
+              class="cios-btn cios-btn-ghost"
+              href="/docs"
+              data-i18n="app.hero.docs"
+              >Xem tài liệu</a
+            >
+          </div>
+        </section>
+
+        <section class="cios-grid cios-grid-3">
+          <article class="cios-card">
+            <h2 data-i18n="app.bootstrap.title">Bootstrap</h2>
+            <p data-bootstrap-auth data-i18n="app.bootstrap.loading">
+              Đang tải bootstrap...
+            </p>
+            <p data-bootstrap-user></p>
+            <p data-bootstrap-workspace></p>
+          </article>
+          <article class="cios-card">
+            <h2 data-i18n="app.overview.title">Overview</h2>
+            <p data-overview-crm data-i18n="app.overview.loading">
+              Đang tải overview...
+            </p>
+            <p data-overview-compliance></p>
+            <p data-overview-decision></p>
+          </article>
+          <article class="cios-card">
+            <h2 data-i18n="app.system.title">System</h2>
+            <p data-overview-system data-i18n="app.system.loading">
+              Đang tải trạng thái hệ thống...
+            </p>
+            <p data-overview-realtime></p>
+          </article>
+        </section>
+
+        <section class="cios-section">
+          <h2 data-i18n="app.demo.title">Demo access</h2>
+          <p data-i18n="app.demo.copy">
+            Nếu chưa có bearer token, app shell sẽ chạy bằng public demo
+            bootstrap từ Workers API.
+          </p>
+          <form class="cios-auth-form" data-auth-form>
+            <label>
+              <span data-i18n="app.demo.api">Workers API base</span>
+              <input
+                name="apiBase"
+                type="url"
+                value="https://cios-workers-api.tranhatam66.workers.dev"
+              />
+            </label>
+            <label>
+              <span data-i18n="app.demo.token">Bearer token</span>
+              <textarea name="token" rows="4" placeholder="Optional"></textarea>
+            </label>
+            <div class="cios-cta-group">
+              <button
+                class="cios-btn cios-btn-primary"
+                type="submit"
+                data-i18n="app.demo.connect"
+              >
+                Kết nối
+              </button>
+              <button
+                class="cios-btn cios-btn-ghost"
+                type="button"
+                data-clear-auth
+                data-i18n="app.demo.clear"
+              >
+                Xóa token
+              </button>
+            </div>
+          </form>
+          <p data-auth-feedback></p>
+        </section>
+
+        <section class="cios-grid cios-grid-3">
+          <article class="cios-card">
+            <h3 data-i18n="app.surface.crm">CRM Surface</h3>
+            <p data-overview-top-orgs>--</p>
+          </article>
+          <article class="cios-card">
+            <h3 data-i18n="app.surface.governance">Governance</h3>
+            <p data-overview-governance>--</p>
+          </article>
+          <article class="cios-card">
+            <h3 data-i18n="app.surface.reasonCodes">Reason codes</h3>
+            <p data-overview-reason-codes>--</p>
+          </article>
+        </section>
+      </main>
+
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính">
+        <a href="/" data-i18n="nav.home"
+          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chủ</a
+        >
+        <a href="/app" aria-current="page" data-i18n="nav.app"
+          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ứng dụng</a
+        >
+        <a href="/pricing" data-i18n="nav.pricing"
+          ><span class="cios-nav-icon" aria-hidden="true">◉</span>Bảng giá</a
+        >
+        <a href="/docs" data-i18n="nav.docs"
+          ><span class="cios-nav-icon" aria-hidden="true">◈</span>Tài liệu</a
+        >
+      </nav>
+    </div>
+
+    <script type="module">
+      import { initAppShell } from "/js/app.js";
+
+      initAppShell();
+    </script>
+  </body>
+</html>

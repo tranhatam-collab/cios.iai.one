@@ -1,0 +1,199 @@
+openapi: 3.1.0
+info:
+  title: CIOS Workers API
+  version: 1.0.0
+  description: Locked phase-2 contract for CIOS Workers implementation.
+servers:
+  - url: https://cios.iai.one
+paths:
+  /v1/system/state:
+    get:
+      summary: Get current system state
+      responses:
+        "200":
+          description: Success
+  /v1/events/ingest:
+    post:
+      summary: Ingest event into event pipeline
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, event_type, occurred_at, payload]
+              properties:
+                source:
+                  type: string
+                event_type:
+                  type: string
+                occurred_at:
+                  type: string
+                  format: date-time
+                payload:
+                  type: object
+                entity_refs:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Ingest accepted
+        "400":
+          description: Validation failed
+        "401":
+          description: Unauthorized
+        "409":
+          description: Idempotency conflict
+  /v1/simulations/run:
+    post:
+      summary: Run simulation scenario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scenario_name, base_state_ref, input_parameters, time_horizon]
+              properties:
+                scenario_name:
+                  type: string
+                base_state_ref:
+                  type: string
+                input_parameters:
+                  type: object
+                time_horizon:
+                  type: string
+                assumptions:
+                  type: object
+      responses:
+        "200":
+          description: Simulation queued
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /v1/governance/approvals:
+    post:
+      summary: Approve or reject governance request
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [request_id, decision, reason]
+              properties:
+                request_id:
+                  type: string
+                decision:
+                  type: string
+                  enum: [approve, reject]
+                reason:
+                  type: string
+                evidence_refs:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Governance decision recorded
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+  /v1/flow/dispatch:
+    post:
+      summary: Dispatch approved action to flow.iai.one
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                [trigger_name, source_decision_id, payload, priority, expected_callback, requested_by]
+              properties:
+                trigger_name:
+                  type: string
+                source_decision_id:
+                  type: string
+                source_simulation_id:
+                  type: string
+                  nullable: true
+                payload:
+                  type: object
+                priority:
+                  type: string
+                expected_callback:
+                  type: string
+                requested_by:
+                  type: string
+                approved_by:
+                  type: string
+      responses:
+        "200":
+          description: Dispatch accepted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "409":
+          description: Idempotency conflict
+  /v1/flow/callback:
+    post:
+      summary: Receive flow execution callback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [flow_run_id, trigger_name, status, completed_at, trace_id]
+              properties:
+                flow_run_id:
+                  type: string
+                trigger_name:
+                  type: string
+                status:
+                  type: string
+                  enum: [queued, running, success, failed, cancelled]
+                result:
+                  type: object
+                error:
+                  type: object
+                  nullable: true
+                completed_at:
+                  type: string
+                  format: date-time
+                trace_id:
+                  type: string
+      responses:
+        "200":
+          description: Callback processed
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="CIOS auth rollout status for Google ID and magic-link sign-in."
+    />
+    <title>Auth Status | CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <main class="cios-main" role="main">
+      <section class="cios-section">
+        <p class="cios-eyebrow">Auth rollout</p>
+        <h1>Trạng thái đăng nhập</h1>
+        <p lang="en">Sign-in status</p>
+        <p>
+          Route này khóa tiêu chuẩn vận hành: code-ready, bearer token demo hoặc
+          HTML fallback không phải là Google ID / magic-link login live.
+        </p>
+        <p lang="en">
+          This route locks the operating standard: code-ready state, demo bearer
+          tokens, or HTML fallbacks are not live Google ID / magic-link sign-in.
+        </p>
+        <ul>
+          <li>Google cần OAuth client, production redirect URI, secret và callback tạo session.</li>
+          <li>Magic-link cần mail provider, inbox delivery, token verification và session cookie.</li>
+          <li>DONE chỉ khi account summary, logout và re-login đều pass trên production.</li>
+          <li>Thiếu secret, callback, DNS, deploy target hoặc inbox proof thì trạng thái vẫn BLOCKED.</li>
+        </ul>
+        <p>
+          <a href="/support/">Support</a> ·
+          <a href="/privacy/">Privacy</a> ·
+          <a href="/terms/">Terms</a> ·
+          <a href="/">Home</a>
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

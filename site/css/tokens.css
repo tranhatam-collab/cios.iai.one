@@ -1,0 +1,54 @@
+:root {
+  color-scheme: dark;
+
+  --cios-font-sans: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --cios-font-display: "Sora", "Manrope", sans-serif;
+  --cios-font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --cios-space-1: 0.25rem;
+  --cios-space-2: 0.5rem;
+  --cios-space-3: 0.75rem;
+  --cios-space-4: 1rem;
+  --cios-space-5: 1.25rem;
+  --cios-space-6: 1.5rem;
+  --cios-space-8: 2rem;
+  --cios-space-10: 2.5rem;
+  --cios-space-12: 3rem;
+
+  --cios-radius-sm: 0.45rem;
+  --cios-radius-md: 0.85rem;
+  --cios-radius-lg: 1.2rem;
+
+  --cios-touch-min: 44px;
+
+  --cios-color-bg: #070d1a;
+  --cios-color-bg-soft: #0c1324;
+  --cios-color-surface: #101a30;
+  --cios-color-surface-soft: #17243f;
+  --cios-color-text: #edf3ff;
+  --cios-color-muted: #9eb0cd;
+  --cios-color-accent: #4fd1c5;
+  --cios-color-accent-strong: #22c6b8;
+  --cios-color-accent-contrast: #041013;
+  --cios-color-border: #24345a;
+  --cios-color-danger: #ff6b6b;
+
+  --cios-shadow-sm: 0 8px 20px rgb(3 8 20 / 0.42);
+  --cios-shadow-md: 0 24px 48px rgb(2 8 24 / 0.5);
+  --cios-shadow-glow:
+    0 0 0 1px rgb(79 209 197 / 0.14), 0 20px 48px rgb(10 22 50 / 0.6);
+
+  --cios-max-width: 74rem;
+  --cios-header-height: 3.8rem;
+  --cios-nav-height: 3.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

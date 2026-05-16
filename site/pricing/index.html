@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0c1324" />
+    <title>CIOS Pricing</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <a class="cios-skip" href="#pricing-main" data-i18n="site.skip"
+      >Bỏ qua điều hướng</a
+    >
+    <div class="cios-app">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <strong>CIOS Pricing</strong>
+          <span data-i18n="header.tagline"
+            >Customer Intelligence Operating System</span
+          >
+        </div>
+        <div class="cios-header-right">
+          <button
+            class="cios-pill cios-lang-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Chuyển sang tiếng Anh / Switch to English"
+          >
+            🇻🇳 Tiếng Việt
+          </button>
+          <span class="cios-version" data-version-label>v--</span>
+        </div>
+      </header>
+
+      <main class="cios-main" id="pricing-main" role="main" tabindex="-1">
+        <section class="cios-hero">
+          <div class="cios-hero-copy">
+            <h1 data-i18n="pricing.title">
+              Chọn cách bạn muốn CIOS làm việc cho bạn.
+            </h1>
+            <p data-i18n="pricing.subtitle">
+              Từ thử nghiệm nhanh đến vận hành toàn bộ hệ thống customer
+              intelligence, CIOS mở rộng theo đúng nhu cầu của bạn.
+            </p>
+            <div
+              class="cios-pill-group"
+              role="group"
+              aria-label="Billing period"
+            >
+              <span
+                class="cios-pill"
+                data-i18n-vi="Hàng tháng"
+                data-i18n-en="Monthly"
+                >Hàng tháng</span
+              >
+              <span
+                class="cios-pill"
+                data-i18n-vi="Hàng năm (-20%)"
+                data-i18n-en="Yearly (-20%)"
+                >Hàng năm (-20%)</span
+              >
+            </div>
+          </div>
+        </section>
+
+        <section class="cios-grid cios-grid-4">
+          <article class="cios-card">
+            <h2>Free</h2>
+            <p><strong>$0</strong></p>
+            <ul>
+              <li>200 credits</li>
+              <li>1 agent</li>
+              <li>Basic discovery</li>
+              <li>Limited signals</li>
+              <li>No export</li>
+              <li>No compliance override</li>
+            </ul>
+            <a
+              class="cios-btn cios-btn-secondary"
+              href="/app"
+              data-i18n="pricing.cta.free"
+              >Bắt đầu miễn phí</a
+            >
+          </article>
+
+          <article class="cios-card">
+            <h2>Pro</h2>
+            <p><strong>$149 / month</strong></p>
+            <p
+              class="cios-section-kicker"
+              data-i18n-vi="Phổ biến nhất"
+              data-i18n-en="Most popular"
+            >
+              Phổ biến nhất
+            </p>
+            <ul>
+              <li>5,000 credits</li>
+              <li>10 agents</li>
+              <li>CRM + signals + scoring</li>
+              <li>Basic compliance</li>
+              <li>Decision suggestions</li>
+              <li>Limited export</li>
+            </ul>
+            <a
+              class="cios-btn cios-btn-secondary"
+              href="/app"
+              data-i18n="pricing.cta.pro"
+              >Bắt đầu Pro</a
+            >
+          </article>
+
+          <article class="cios-card cios-pricing-highlight">
+            <h2>Business</h2>
+            <p><strong>$499 / month</strong></p>
+            <p
+              class="cios-section-kicker"
+              data-i18n-vi="Tăng trưởng mạnh"
+              data-i18n-en="Growth tier"
+            >
+              Tăng trưởng mạnh
+            </p>
+            <ul>
+              <li>25,000 credits</li>
+              <li>Unlimited agents (soft)</li>
+              <li>Full CRM + signals + scoring</li>
+              <li>Compliance Center + Audit logs</li>
+              <li>Decision engine</li>
+              <li>Workflow automation</li>
+            </ul>
+            <a
+              class="cios-btn cios-btn-primary"
+              href="/app"
+              data-i18n="pricing.cta.business"
+              >Nâng cấp Business</a
+            >
+          </article>
+
+          <article class="cios-card">
+            <h2>Enterprise</h2>
+            <p><strong>Custom</strong></p>
+            <ul>
+              <li>Unlimited usage (fair use)</li>
+              <li>SLA 99.9%</li>
+              <li>Dedicated instance</li>
+              <li>Custom governance</li>
+              <li>Full constitutional engine</li>
+              <li>Full integrations + white-label</li>
+            </ul>
+            <a
+              class="cios-btn cios-btn-secondary"
+              href="mailto:cios@iai.one"
+              data-i18n="pricing.cta.enterprise"
+              >Liên hệ đội ngũ</a
+            >
+          </article>
+        </section>
+
+        <section class="cios-section">
+          <h2
+            data-i18n-vi="Credits = đơn vị xử lý intelligence, không phải token."
+            data-i18n-en="Credits are intelligence processing units, not tokens."
+          >
+            Credits = đơn vị xử lý intelligence, không phải token.
+          </h2>
+          <p
+            data-i18n-vi="Bạn không trả tiền theo token AI. Bạn trả cho các tác vụ có giá trị: discovery, phân tích công ty, đánh giá quyết định và thực thi workflow."
+            data-i18n-en="You are not billed by AI token count. You pay for value tasks: discovery, company analysis, decision evaluation, and workflow execution."
+          >
+            Bạn không trả tiền theo token AI. Bạn trả cho các tác vụ có giá trị:
+            discovery, phân tích công ty, đánh giá quyết định và thực thi
+            workflow.
+          </p>
+          <ul>
+            <li>1 discovery cycle → 5 credits</li>
+            <li>1 company analysis → 3 credits</li>
+            <li>1 decision evaluation → 1 credit</li>
+            <li>1 workflow execution → 2-10 credits</li>
+          </ul>
+        </section>
+
+        <section class="cios-section">
+          <h2
+            data-i18n-vi="Bạn không trả tiền cho dữ liệu. Bạn trả tiền cho quyết định đúng."
+            data-i18n-en="You do not pay for data. You pay for correct decisions."
+          >
+            Bạn không trả tiền cho dữ liệu. Bạn trả tiền cho quyết định đúng.
+          </h2>
+          <div class="cios-grid cios-grid-3">
+            <article class="cios-card">
+              <h3 data-i18n-vi="Đúng người" data-i18n-en="Right target">
+                Đúng người
+              </h3>
+              <p
+                data-i18n-vi="CIOS tìm ra công ty đáng chú ý nhất."
+                data-i18n-en="CIOS identifies the companies that matter most."
+              >
+                CIOS tìm ra công ty đáng chú ý nhất.
+              </p>
+            </article>
+            <article class="cios-card">
+              <h3 data-i18n-vi="Đúng thời điểm" data-i18n-en="Right timing">
+                Đúng thời điểm
+              </h3>
+              <p
+                data-i18n-vi="CIOS phát hiện tín hiệu trước khi thị trường rõ ràng."
+                data-i18n-en="CIOS captures signals before the market becomes obvious."
+              >
+                CIOS phát hiện tín hiệu trước khi thị trường rõ ràng.
+              </p>
+            </article>
+            <article class="cios-card">
+              <h3 data-i18n-vi="Đúng hành động" data-i18n-en="Right action">
+                Đúng hành động
+              </h3>
+              <p
+                data-i18n-vi="CIOS đề xuất bước tiếp theo thay vì để bạn tự đoán."
+                data-i18n-en="CIOS recommends the next best action instead of guesswork."
+              >
+                CIOS đề xuất bước tiếp theo thay vì để bạn tự đoán.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="cios-final">
+          <h2
+            data-i18n-vi="Một lead đúng có thể hoàn vốn toàn bộ chi phí."
+            data-i18n-en="One correct lead can repay the entire cost."
+          >
+            Một lead đúng có thể hoàn vốn toàn bộ chi phí.
+          </h2>
+          <div class="cios-cta-group">
+            <a
+              class="cios-btn cios-btn-primary"
+              href="/app"
+              data-i18n="pricing.cta.free"
+              >Bắt đầu miễn phí</a
+            >
+            <a
+              class="cios-btn cios-btn-ghost"
+              href="mailto:cios@iai.one"
+              data-i18n="pricing.cta.enterprise"
+              >Liên hệ đội ngũ</a
+            >
+          </div>
+        </section>
+      </main>
+
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính">
+        <a href="/" data-i18n="nav.home"
+          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chủ</a
+        >
+        <a href="/app" data-i18n="nav.app"
+          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ứng dụng</a
+        >
+        <a href="/pricing" aria-current="page" data-i18n="nav.pricing"
+          ><span class="cios-nav-icon" aria-hidden="true">◉</span>Bảng giá</a
+        >
+      </nav>
+    </div>
+
+    <script type="module">
+      import { initLanguageOnlyPage } from "/js/app.js";
+      initLanguageOnlyPage();
+    </script>
+  </body>
+</html>

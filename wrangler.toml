@@ -1,0 +1,7 @@
+# Cloudflare Pages (Wrangler rejects `account_id` in this file for Pages deploys).
+# Chọn account: đặt CLOUDFLARE_ACCOUNT_ID trong .env hoặc export trước khi chạy wrangler.
+# https://developers.cloudflare.com/pages/how-to/wrangler/
+
+name = "cios-iai-one"
+compatibility_date = "2025-03-25"
+pages_build_output_dir = "site"

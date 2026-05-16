@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ci
+          JWT_SECRET: ci-jwt-secret
+          SESSION_SECRET: ci-session-secret
+          FLOW_WEBHOOK_SECRET: ci-flow-webhook-secret
+          LOG_LEVEL: silent
+
+  smoke-workers-strict:
+    name: Smoke Workers Strict
+    needs: build-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Smoke workers strict
+        run: npm run smoke:workers:strict
+        env:
+          JWT_SECRET: ${{ secrets.SMOKE_WORKERS_JWT_SECRET }}
+          WORKERS_API_URL: ${{ secrets.SMOKE_WORKERS_API_URL }}
+
+  deploy-pages:
+    name: Deploy Cloudflare Pages
+    needs: [build-test, smoke-workers-strict]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sync site version manifest
+        run: node scripts/sync-site-version.mjs
+
+      # Strip leading/trailing whitespace/newlines from the secret (common paste mistake) then verify + deploy.
+      - name: Publish to Cloudflare Pages
+        run: |
+          set -euo pipefail
+          TOKEN="$(python3 -c "import os; print(os.environ['CLOUDFLARE_API_TOKEN'].strip())")"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is empty after trim. Add the API token under Settings → Secrets → Actions."
+            exit 1
+          fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/cios-iai-one" \
+            -H "Authorization: Bearer ${TOKEN}")
+          if [ "$code" != "200" ]; then
+            echo "::error::Cloudflare API returned HTTP ${code} for Pages project lookup."
+            echo "Use an API Token with Account → Cloudflare Pages → Edit on this account; not the Global API Key."
+            exit 1
+          fi
+          export CLOUDFLARE_API_TOKEN="$TOKEN"
+          npx --yes wrangler@4 pages deploy site --project-name=cios-iai-one
+        env:
+          CLOUDFLARE_ACCOUNT_ID: 93112cc89181e75335cbd7ef7e392ba3
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Smoke test (production Pages URL)
+        run: |
+          curl -fsS --retry 5 --retry-delay 4 --retry-all-errors \
+            "https://cios-iai-one.pages.dev/" | grep -q "Hệ điều hành tìm kiếm khách hàng tự động"

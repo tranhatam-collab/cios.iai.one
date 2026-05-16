@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0c1324" />
+    <title>CIOS Enterprise Sales Deck</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <style>
+      @media print {
+        .cios-nav,
+        .cios-header {
+          display: none;
+        }
+
+        .cios-main {
+          max-width: 100%;
+          padding: 0;
+        }
+
+        .deck-slide {
+          break-inside: avoid;
+          page-break-inside: avoid;
+          min-height: 88vh;
+          margin: 0 0 1rem;
+        }
+      }
+
+      .deck-slide {
+        border: 1px solid var(--cios-color-border);
+        border-radius: var(--cios-radius-md);
+        padding: var(--cios-space-6);
+        background: var(--cios-color-surface);
+      }
+
+      .deck-slide + .deck-slide {
+        margin-top: var(--cios-space-4);
+      }
+
+      .deck-slide h2 {
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="cios-skip" href="#deck-main" data-i18n="site.skip"
+      >Bỏ qua điều hướng</a
+    >
+    <div class="cios-app">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <strong data-i18n="deck.title">Enterprise Sales Deck</strong>
+          <span data-i18n="deck.subtitle"
+            >Bản trình bày đóng deal $50k - $500k, sẵn sàng export PDF.</span
+          >
+        </div>
+        <div class="cios-header-right">
+          <button
+            class="cios-pill cios-lang-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Chuyển sang tiếng Anh / Switch to English"
+          >
+            🇻🇳 Tiếng Việt
+          </button>
+          <button class="cios-pill" type="button" onclick="window.print()">
+            PDF
+          </button>
+        </div>
+      </header>
+
+      <main class="cios-main" id="deck-main" role="main" tabindex="-1">
+        <section class="deck-slide">
+          <h2>1. CIOS</h2>
+          <p
+            data-i18n-vi="Customer Intelligence Operating System"
+            data-i18n-en="Customer Intelligence Operating System"
+          >
+            Customer Intelligence Operating System
+          </p>
+        </section>
+        <section class="deck-slide">
+          <h2>2. Problem</h2>
+          <ul>
+            <li
+              data-i18n-vi="Doanh nghiệp không thiếu dữ liệu, nhưng thiếu quyết định đúng."
+              data-i18n-en="Enterprises are not data-poor, they are decision-poor."
+            >
+              Doanh nghiệp không thiếu dữ liệu, nhưng thiếu quyết định đúng.
+            </li>
+            <li
+              data-i18n-vi="Không biết tín hiệu nào quan trọng, khi nào hành động, và có an toàn hay không."
+              data-i18n-en="Teams cannot consistently tell which signal matters, when to act, and whether it is safe."
+            >
+              Không biết tín hiệu nào quan trọng, khi nào hành động, và có an
+              toàn hay không.
+            </li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>3. Current stack is broken</h2>
+          <ul>
+            <li>CRM: static records</li>
+            <li>Data tools: fragmented views</li>
+            <li>AI: outputs without control layer</li>
+            <li>Compliance: too late in the loop</li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>4. Shift</h2>
+          <p
+            data-i18n-vi="Bạn không cần thêm tool. Bạn cần một operating system cho customer intelligence."
+            data-i18n-en="You do not need another tool. You need an operating system for customer intelligence."
+          >
+            Bạn không cần thêm tool. Bạn cần một operating system cho customer
+            intelligence.
+          </p>
+        </section>
+        <section class="deck-slide">
+          <h2>5. What is CIOS</h2>
+          <ul>
+            <li>Data intelligence</li>
+            <li>Compliance control</li>
+            <li>Decision engine</li>
+            <li>Workflow execution</li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>6. Core value</h2>
+          <ul>
+            <li data-i18n-vi="Ai đáng chú ý" data-i18n-en="Who matters now">
+              Ai đáng chú ý
+            </li>
+            <li data-i18n-vi="Vì sao" data-i18n-en="Why they matter">Vì sao</li>
+            <li
+              data-i18n-vi="Có an toàn không"
+              data-i18n-en="Whether action is safe"
+            >
+              Có an toàn không
+            </li>
+            <li data-i18n-vi="Nên làm gì" data-i18n-en="What to do next">
+              Nên làm gì
+            </li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>7. Architecture</h2>
+          <p>Sources -> Intelligence -> Compliance -> Decision -> Execution</p>
+        </section>
+        <section class="deck-slide">
+          <h2>8. Differentiation</h2>
+          <p>Charter Enforcement Engine</p>
+          <ul>
+            <li
+              data-i18n-vi="AI không được hành động nếu vi phạm rule."
+              data-i18n-en="AI cannot execute actions that violate policy rules."
+            >
+              AI không được hành động nếu vi phạm rule.
+            </li>
+            <li
+              data-i18n-vi="Lớp kiểm soát này là moat cốt lõi."
+              data-i18n-en="This control layer is a defensible moat."
+            >
+              Lớp kiểm soát này là moat cốt lõi.
+            </li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>9. Use cases</h2>
+          <ul>
+            <li>B2B lead discovery</li>
+            <li>Market intelligence</li>
+            <li>Sales prioritization</li>
+            <li>Compliance-safe outreach</li>
+            <li>Automated workflows</li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>10. Business impact</h2>
+          <ul>
+            <li>Reduce research time by 70%</li>
+            <li>Increase conversion quality</li>
+            <li>Lower compliance risk</li>
+            <li>Unify fragmented stack</li>
+          </ul>
+        </section>
+        <section class="deck-slide">
+          <h2>11. Why now</h2>
+          <p>
+            AI agents are scaling fast, but control layers are still missing.
+            CIOS is that layer.
+          </p>
+        </section>
+        <section class="deck-slide">
+          <h2>12. Product today</h2>
+          <p>CRM · Compliance · Discovery · Audit · Governance</p>
+        </section>
+        <section class="deck-slide">
+          <h2>13. Roadmap</h2>
+          <p>
+            Decision engine · Full automation · Global expansion ·
+            Multi-language
+          </p>
+        </section>
+        <section class="deck-slide">
+          <h2>14. Pricing</h2>
+          <p>Pro: $149 · Business: $499 · Enterprise: Custom</p>
+        </section>
+        <section class="deck-slide">
+          <h2>15. Enterprise offer</h2>
+          <p>Dedicated instance · Custom governance · Integrations · SLA</p>
+        </section>
+        <section class="deck-slide">
+          <h2>16. Pilot</h2>
+          <p>30-60 ngày: setup -> data -> workflow -> measurable results</p>
+        </section>
+        <section class="deck-slide">
+          <h2>17. Close</h2>
+          <p
+            data-i18n-vi="CIOS không thay thế một tool. CIOS thay thế cách bạn ra quyết định."
+            data-i18n-en="CIOS does not replace one tool. CIOS replaces how you make decisions."
+          >
+            CIOS không thay thế một tool. CIOS thay thế cách bạn ra quyết định.
+          </p>
+        </section>
+        <section class="deck-slide">
+          <h2>18. CTA</h2>
+          <p
+            data-i18n-vi="Bắt đầu pilot · Kết nối đội ngũ"
+            data-i18n-en="Start pilot · Connect your teams"
+          >
+            Bắt đầu pilot · Kết nối đội ngũ
+          </p>
+        </section>
+      </main>
+
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính">
+        <a href="/" data-i18n="nav.home"
+          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chủ</a
+        >
+        <a href="/app" data-i18n="nav.app"
+          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ứng dụng</a
+        >
+        <a href="/pricing" data-i18n="nav.pricing"
+          ><span class="cios-nav-icon" aria-hidden="true">◉</span>Bảng giá</a
+        >
+      </nav>
+    </div>
+
+    <script type="module">
+      import { initLanguageOnlyPage } from "/js/app.js";
+      initLanguageOnlyPage();
+    </script>
+  </body>
+</html>
