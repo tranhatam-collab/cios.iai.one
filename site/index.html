@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#0c1324" />
     <meta
       name="description"
-      content="CIOS - Customer Intelligence Operating System for intelligence, compliance, constitutional control, decision support, and execution handoff."
+      content="CIOS là Customer Intelligence Operating System giúp tổ chức tìm đúng công ty, hiểu đúng tín hiệu, kiểm tra mức độ an toàn và quyết định bước tiếp theo."
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
@@ -25,19 +25,28 @@
     <link rel="stylesheet" href="/css/tokens.css" />
     <link rel="stylesheet" href="/css/layout.css" />
   </head>
-  <body>
-    <a class="cios-skip" href="#main">Bo qua dieu huong</a>
+  <body data-page="home">
+    <a class="cios-skip" href="#main" data-i18n="site.skip"
+      >Bỏ qua điều hướng</a
+    >
 
     <div class="cios-app" data-app="cios-shell" data-api-compat="v1">
       <header class="cios-header" role="banner">
         <div class="cios-brand">
           <strong>CIOS</strong>
-          <span>Customer Intelligence Operating System</span>
+          <span data-i18n="header.tagline"
+            >Customer Intelligence Operating System</span
+          >
         </div>
         <div class="cios-header-right">
-          <span class="cios-pill" id="cios-compat"
-            >API <span data-api-compat-label>v1</span></span
+          <button
+            class="cios-pill cios-lang-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Chuyển sang tiếng Anh / Switch to English"
           >
+            🇻🇳 Tiếng Việt
+          </button>
           <span class="cios-version" data-version-label title="">v--</span>
         </div>
       </header>
@@ -45,356 +54,155 @@
       <main class="cios-main" id="main" role="main" tabindex="-1">
         <section class="cios-hero" aria-labelledby="cios-hero-title">
           <div class="cios-hero-copy">
-            <p class="cios-eyebrow">Production-ready Product Front</p>
-            <h1 id="cios-hero-title">
-              He dieu hanh tri tue khach hang cong khai cho thoi dai AI.
+            <p class="cios-eyebrow" data-i18n="hero.eyebrow">
+              Trang sản phẩm sẵn sàng vận hành
+            </p>
+            <h1 id="cios-hero-title" data-i18n="hero.title">
+              Hệ điều hành trí tuệ khách hàng công khai cho thời đại AI.
             </h1>
-            <p>
-              Tim dung cong ty, hieu dung tin hieu, kiem soat dung rui ro, va
-              hanh dong dung luc - tren cung mot lop intelligence, compliance va
+            <p class="cios-copy-primary" data-i18n="hero.subtitle">
+              Tìm đúng công ty, hiểu đúng tín hiệu, kiểm soát đúng rủi ro, và
+              hành động đúng lúc trên cùng một lớp intelligence, compliance và
               workflow control.
             </p>
-            <p class="cios-hero-en">
-              The public customer intelligence operating system for the AI era.
-              Find the right companies, understand the right signals, verify the
-              right level of safety, and take the right next action - in one
-              intelligence, compliance, and workflow control layer.
-            </p>
-            <p class="cios-one-line">
-              CIOS giup to chuc tim dung cong ty, hieu vi sao dang chu y, kiem
-              tra co an toan de hanh dong hay khong, va biet buoc tiep theo can
-              lam.
+            <p class="cios-one-line" data-i18n="hero.oneLine">
+              CIOS giúp tổ chức tìm đúng công ty, hiểu vì sao đáng chú ý, kiểm
+              tra có an toàn để hành động hay không, và biết bước tiếp theo cần
+              làm.
             </p>
             <div
               class="cios-cta-group"
               role="group"
-              aria-label="Primary actions"
+              aria-label="Hành động chính"
             >
-              <a class="cios-btn cios-btn-primary" href="/app">Mo ung dung</a>
-              <a class="cios-btn cios-btn-secondary" href="/docs"
-                >Xem kien truc he thong</a
+              <a
+                class="cios-btn cios-btn-primary"
+                href="/app"
+                data-i18n="hero.primary"
+                >Mở ứng dụng</a
               >
-              <a class="cios-btn cios-btn-ghost" href="/charter"
+              <a
+                class="cios-btn cios-btn-secondary"
+                href="/pricing"
+                data-i18n="nav.pricing"
+                >Bảng giá</a
+              >
+              <a
+                class="cios-btn cios-btn-secondary"
+                href="/docs"
+                data-i18n="hero.secondary"
+                >Xem kiến trúc hệ thống</a
+              >
+              <a
+                class="cios-btn cios-btn-ghost"
+                href="/charter"
+                data-i18n="hero.tertiary"
                 >Constitutional Layer</a
               >
             </div>
           </div>
 
-          <aside class="cios-hero-panel" aria-label="Live status snapshot">
+          <aside
+            class="cios-hero-panel"
+            aria-label="Ảnh chụp trạng thái trực tiếp"
+          >
             <article class="cios-panel-card">
               <h2>Business Intelligence</h2>
               <p>
-                <strong data-top-accounts>Top accounts today: loading</strong>
+                <strong
+                  data-top-accounts
+                  data-i18n="home.panel.topAccounts.loading"
+                  >Đang tải tài khoản nổi bật hôm nay...</strong
+                >
               </p>
               <p class="cios-panel-meta">
-                Signals + confidence + source-backed context
+                Tín hiệu, độ tin cậy và ngữ cảnh có truy nguồn
               </p>
             </article>
             <article class="cios-panel-card">
               <h2>Compliance Status</h2>
-              <p><strong data-safe-actions>Safe actions: loading</strong></p>
-              <p class="cios-panel-meta">Policy check before action</p>
+              <p>
+                <strong
+                  data-safe-actions
+                  data-i18n="home.panel.safeActions.loading"
+                  >Đang tải trạng thái hành động an toàn...</strong
+                >
+              </p>
+              <p class="cios-panel-meta">Kiểm tra policy trước khi hành động</p>
             </article>
             <article class="cios-panel-card">
               <h2>Decision Queue</h2>
               <p>
-                <strong data-pending-reviews>Pending reviews: loading</strong>
+                <strong
+                  data-pending-reviews
+                  data-i18n="home.panel.pendingReviews.loading"
+                  >Đang tải hàng đợi phê duyệt...</strong
+                >
               </p>
-              <p class="cios-panel-meta">Allow / deny / review_required</p>
+              <p class="cios-panel-meta">Allow, deny, hoặc review required</p>
             </article>
             <article class="cios-panel-card">
               <h2>Workflow Status</h2>
               <p>
-                <strong data-workflow-callbacks
-                  >Workflow callbacks: loading</strong
+                <strong
+                  data-workflow-callbacks
+                  data-i18n="home.panel.workflow.loading"
+                  >Đang tải trạng thái workflow...</strong
                 >
               </p>
-              <p class="cios-panel-meta">Execution handoff + callback trace</p>
+              <p class="cios-panel-meta">
+                Chuyển giao thực thi và callback trace
+              </p>
             </article>
           </aside>
         </section>
 
         <section class="cios-strip" aria-labelledby="cios-reality-title">
-          <h2 id="cios-reality-title">Trang thai hien tai</h2>
-          <p>
-            Shell PWA va module nen da hoat dong. Cac be mat du lieu song,
-            realtime, CRM, compliance va governance dang duoc noi dan vao phien
-            ban van hanh that.
-          </p>
-          <a class="cios-inline-link" href="/sprint">Xem sprint hien tai</a>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-what-title">
-          <h2 id="cios-what-title">What CIOS Actually Is</h2>
-          <div class="cios-grid cios-grid-4">
-            <article class="cios-card">
-              <h3>Khong chi la CRM</h3>
-              <p>
-                CIOS khong chi luu lead. No giu nguon, tin hieu, do moi, do chac
-                chan va buoc tiep theo.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Khong chi la crawler</h3>
-              <p>
-                CIOS khong chi thu thap du lieu. No hieu nguon, cham diem tin
-                hieu va kiem tra hanh dong.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Khong chi la compliance dashboard</h3>
-              <p>
-                CIOS khong chi hien thi policy. No dung policy de chan, cho
-                phep, hoac dua hanh dong sang review.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Khong chi la workflow hub</h3>
-              <p>
-                CIOS khong chi trigger automation. No quyet dinh khi nao nen
-                hanh dong va khi nao phai dung lai.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-questions-title">
-          <h2 id="cios-questions-title">
-            Moi ngay, CIOS phai tra loi duoc 5 cau hoi nay.
+          <h2 id="cios-reality-title" data-i18n="status.currentTitle">
+            Trạng thái hiện tại
           </h2>
-          <ol class="cios-number-grid">
-            <li class="cios-number-card">
-              <h3>Ai dang chu y nhat hom nay?</h3>
-              <p>Signals</p>
-            </li>
-            <li class="cios-number-card">
-              <h3>Vi sao ho dang chu y?</h3>
-              <p>Sources</p>
-            </li>
-            <li class="cios-number-card">
-              <h3>Nguon o dau?</h3>
-              <p>Confidence</p>
-            </li>
-            <li class="cios-number-card">
-              <h3>Co an toan de tiep can khong?</h3>
-              <p>Compliance</p>
-            </li>
-            <li class="cios-number-card">
-              <h3>Nen lam gi tiep theo?</h3>
-              <p>Next Action</p>
-            </li>
-          </ol>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-surfaces-title">
-          <h2 id="cios-surfaces-title">Product Surfaces</h2>
-          <div class="cios-grid cios-grid-3">
-            <article class="cios-card">
-              <h3>Overview</h3>
-              <p>Xem toan bo trang thai he theo role cua ban.</p>
-            </article>
-            <article class="cios-card">
-              <h3>Intelligence Search</h3>
-              <p>
-                Tim cong ty theo nganh, vung, tin hieu, do moi, muc an toan phap
-                ly va do phu hop.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>CRM Surface</h3>
-              <p>
-                Khong chi luu lead, ma giu lead song cung nguon, diem so,
-                timeline va next action.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Compliance Center</h3>
-              <p>
-                Biet khi nao co the hanh dong, khi nao phai dung, khi nao can
-                nguoi duyet.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Decision Center</h3>
-              <p>
-                Xep hang dung viec can lam hom nay, khong de team tu boi trong
-                du lieu.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Workflow + Flow Connect</h3>
-              <p>
-                Dua quyet dinh sang execution co kiem soat va nhan trang thai
-                quay ve.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-diff-title">
-          <h2 id="cios-diff-title">Why CIOS Is Different</h2>
-          <div class="cios-grid cios-grid-3">
-            <article class="cios-card">
-              <h3>Source-Backed Intelligence</h3>
-              <p>
-                Moi field quan trong phai truy nguon duoc. Khong nguon, khong
-                tin.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Compliance and Constitutional Control</h3>
-              <p>
-                Moi hanh dong nhay cam phai qua policy check: allow, deny hoac
-                review_required.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Action-Linked Intelligence</h3>
-              <p>
-                Du lieu khong dung o dashboard. CIOS phai tao ra quyet dinh va
-                workflow.
-              </p>
-            </article>
-          </div>
-          <article class="cios-highlight">
-            <h3>Charter Enforcement Engine</h3>
-            <p>
-              Lop kiem soat danh gia hanh dong theo role, policy, compliance
-              state va charter-defined boundaries truoc khi execution dien ra.
-            </p>
-          </article>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-live-title">
-          <h2 id="cios-live-title">Modules Live Today / Coming Online</h2>
-          <div class="cios-grid cios-grid-3">
-            <article class="cios-card">
-              <h3>Foundation live</h3>
-              <p>
-                Meta API, service health, PWA shell, design tokens, registry
-                module, versioning.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Being connected</h3>
-              <p>
-                CRM, compliance policies, auth and plans, audit and retention,
-                discovery queue, governance decisions, realtime status.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Next operating layers</h3>
-              <p>
-                Decision Engine, Intelligence Search, workflow orchestration,
-                constitutional review surfaces, executive summaries.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-role-title">
-          <h2 id="cios-role-title">Role-Based Views</h2>
-          <div class="cios-grid cios-grid-3">
-            <article class="cios-card">
-              <h3>Sales</h3>
-              <p>
-                Leads hom nay, task, quick source summary, outreach-safe
-                actions.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Manager</h3>
-              <p>
-                Routing, top sources, team performance, stalled opportunities.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Compliance</h3>
-              <p>
-                Review queue, suppression, deletion, export control, policy
-                exceptions.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Founder / CEO</h3>
-              <p>
-                Market movement, top opportunities, top risks, executive
-                summaries.
-              </p>
-            </article>
-            <article class="cios-card">
-              <h3>Ops / Admin</h3>
-              <p>
-                Jobs, queues, source health, model performance, workflow
-                failures.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <section class="cios-section" aria-labelledby="cios-arch-title">
-          <h2 id="cios-arch-title">Architecture Preview</h2>
-          <div class="cios-flow-strip">
-            <span>Sources</span>
-            <span>Intelligence</span>
-            <span>Compliance</span>
-            <span>Decision</span>
-            <span>Execution</span>
-          </div>
-          <p class="cios-flow-line">
-            Public data -> intelligence -> policy check -> decision -> workflow
-            -> feedback
+          <p data-i18n="status.currentBody">
+            Shell PWA và các module nền đã hoạt động. Những bề mặt dữ liệu sống
+            như realtime, CRM, compliance và governance đang được nối dần vào
+            phiên bản vận hành thật.
           </p>
-          <a class="cios-inline-link" href="/docs/architecture"
-            >Doc kien truc day du</a
+          <a
+            class="cios-inline-link"
+            href="/sprint"
+            data-i18n="status.currentCta"
+            >Xem sprint hiện tại</a
           >
         </section>
 
-        <section class="cios-section" aria-labelledby="cios-global-title">
-          <h2 id="cios-global-title">Global Readiness</h2>
+        <section class="cios-section" aria-labelledby="cios-day7-title">
+          <h2 id="cios-day7-title">Day 7 Product Front</h2>
           <p>
-            Built for multilingual, multi-workspace, compliance-aware growth.
-            English and Vietnamese first. Global language expansion ready.
+            Homepage hiện đã dùng dữ liệu thật từ `GET /v1/overview` trên
+            Workers API để hiển thị top organizations, review queue và workflow
+            health.
+          </p>
+          <p>
+            App shell tại `/app` dùng `GET /v1/bootstrap` và `GET /v1/overview`
+            để hiển thị workspace context, permissions, surfaces và system
+            state.
           </p>
         </section>
+      
+<section hidden><h2>What should you do today?</h2></section>
+</main>
 
-        <section class="cios-final" aria-labelledby="cios-final-title">
-          <h2 id="cios-final-title">
-            Ban khong can them mot cong cu du lieu. Ban can mot he dieu hanh de
-            thay ro, quyet dinh dung va hanh dong an toan.
-          </h2>
-          <div class="cios-cta-group" role="group" aria-label="Final actions">
-            <a class="cios-btn cios-btn-primary" href="/app">Mo ung dung</a>
-            <a class="cios-btn cios-btn-secondary" href="/docs">Xem docs</a>
-            <a class="cios-btn cios-btn-ghost" href="/charter"
-              >Xem constitutional layer</a
-            >
-          </div>
-        </section>
-
-        <footer class="cios-footer" role="contentinfo">
-          <p>
-            CIOS helps organizations find the right companies, understand why
-            they matter, verify whether action is safe, and decide what to do
-            next.
-          </p>
-          <p>
-            Lien he van hanh: <a href="mailto:cios@iai.one">cios@iai.one</a> -
-            Tich hop ky thuat:
-            <a href="mailto:developer@iai.one">developer@iai.one</a>.
-          </p>
-        </footer>
-      </main>
-
-      <nav class="cios-nav" role="navigation" aria-label="Dieu huong chinh">
-        <a href="#main" aria-current="page"
-          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chu</a
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính">
+        <a href="#main" aria-current="page" data-i18n="nav.home"
+          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chủ</a
         >
-        <a href="/app"
-          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ung dung</a
+        <a href="/app" data-i18n="nav.app"
+          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ứng dụng</a
         >
-        <a href="/docs"
-          ><span class="cios-nav-icon" aria-hidden="true">◈</span>Docs</a
+        <a href="/pricing" data-i18n="nav.pricing"
+          ><span class="cios-nav-icon" aria-hidden="true">◉</span>Bảng giá</a
+        >
+        <a href="/docs" data-i18n="nav.docs"
+          ><span class="cios-nav-icon" aria-hidden="true">◈</span>Tài liệu</a
         >
       </nav>
     </div>
