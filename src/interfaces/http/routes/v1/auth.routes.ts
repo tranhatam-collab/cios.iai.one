@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { requireAuth, type WorkspaceRole } from "../../../../app/auth-guard.js";
+import { requireAuth } from "../../../../app/auth-guard.js";
 import { ERROR_CODES } from "../../../../app/error-codes.js";
 import { ACTIONS, requireAction } from "../../../../app/permissions.js";
 import { envelopeError, envelopeOk } from "../../response-envelope.js";

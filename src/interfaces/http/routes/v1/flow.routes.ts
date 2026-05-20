@@ -120,7 +120,7 @@ export async function registerV1FlowRoutes(
   });
 
   app.post("/flow/callback", async (request, reply) => {
-    let workspaceId = "";
+    let workspaceId: string;
     let actorEmail = "flow-system";
 
     if (env.FLOW_WEBHOOK_SECRET) {

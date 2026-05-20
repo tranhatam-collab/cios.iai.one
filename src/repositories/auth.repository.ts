@@ -111,6 +111,10 @@ export async function registerMember(input: RegisterInput): Promise<{ member: Au
       }
     };
   } catch {
+    // Memory fallback is disabled in production — only for local dev when DB is unavailable
+    if (process.env.NODE_ENV === 'production') {
+      return { error: "service_unavailable" };
+    }
     ensureMemoryDemoWorkspace();
     const key = memoryKey(input.email, input.workspaceCode);
     if (memoryUsers.has(key)) {
@@ -187,6 +191,10 @@ export async function loginMember(input: {
       }
     };
   } catch {
+    // Memory fallback is disabled in production — only for local dev when DB is unavailable
+    if (process.env.NODE_ENV === 'production') {
+      return { error: "service_unavailable" };
+    }
     ensureMemoryDemoWorkspace();
     const key = memoryKey(input.email, input.workspaceCode);
     const row = memoryUsers.get(key);
