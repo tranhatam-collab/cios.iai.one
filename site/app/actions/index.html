@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Actions — recommended next actions." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Actions — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div><button id="logout-btn" class="cios-btn">Log out</button></div>
+      </header>
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Actions</h1>
+        <div id="actions-list"></div>
+      </main>
+    </div>
+    <script type="module">
+      import { renderSidebar, apiGet, renderEmpty, scoreBadge, bindLogout } from "/js/app-shell.js";
+      renderSidebar("/app/actions/");
+      bindLogout();
+
+      async function loadActions() {
+        const container = document.getElementById("actions-list");
+        try {
+          const res = await apiGet("/v1/crm/organizations");
+          const orgs = res?.data?.organizations ?? [];
+          if (orgs.length === 0) {
+            renderEmpty(container, "No actions yet. Add accounts to generate recommendations.");
+            return;
+          }
+          const actions = orgs.map(o => {
+            let action = "Watchlist";
+            if (o.fitScore >= 80) action = "Prepare outreach";
+            else if (o.fitScore >= 60) action = "Research more";
+            return { ...o, action };
+          });
+          container.innerHTML = `<table class="cios-table"><thead><tr><th>Company</th><th>Score</th><th>Recommended Action</th><th>Status</th></tr></thead><tbody>` +
+            actions.map(a =>
+              `<tr><td><a href="/app/accounts/detail.html?id=${encodeURIComponent(a.id)}">${a.name}</a></td><td>${scoreBadge(a.fitScore)}</td><td>${a.action}</td><td><span class="cios-badge cios-badge-blue">Pending</span></td></tr>`
+            ).join("") + `</tbody></table>`;
+        } catch {
+          renderEmpty(container, "Could not load actions.");
+        }
+      }
+      loadActions();
+    </script>
+  </body>
+</html>

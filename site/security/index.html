@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta
+      name="description"
+      content="CIOS security and privacy — how we handle data, control access, encrypt information, and keep your customer intelligence safe."
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <title>Security — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <a class="cios-skip" href="#main">Skip to content</a>
+
+    <div class="cios-app">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <a href="/" style="text-decoration:none;color:inherit;"><strong>CIOS</strong></a>
+          <span data-i18n-en="Decision Operating System" data-i18n-vi="Hệ điều hành ra quyết định">Decision Operating System</span>
+        </div>
+        <div class="cios-header-actions">
+          <button class="cios-pill cios-lang-btn" type="button" data-lang-toggle>VI</button>
+          <a class="cios-pill" href="/pricing/">Pricing</a>
+          <a class="cios-pill" href="/security/">Security</a>
+          <a class="cios-pill" href="/enterprise/">Enterprise</a>
+          <a class="cios-pill" href="/contact/">Contact</a>
+          <a class="cios-pill" href="/app/">Open app</a>
+        </div>
+      </header>
+
+      <main class="cios-main" id="main" role="main" tabindex="-1">
+        <section class="cios-hero" aria-labelledby="security-title">
+          <p class="cios-eyebrow">Security</p>
+          <h1 id="security-title" data-i18n-en="Your data. Your control. Your trust." data-i18n-vi="Dữ liệu của bạn. Quyền kiểm soát của bạn. Sự tin tưởng của bạn.">Your data. Your control. Your trust.</h1>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Data sources</h2>
+          <p>We only collect publicly available business data and data you explicitly import. We do not scrape personal data without legal basis.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Customer data handling</h2>
+          <p>Workspace data is isolated by tenant. We do not share your company lists, signals, or scores between workspaces. You can export or delete your workspace data at any time.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Access control</h2>
+          <p>Role-based access control (RBAC) with workspace roles: owner, admin, sales manager, sales rep, analyst, reviewer, finance, support, and readonly. Every sensitive action is logged in the audit trail.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Encryption</h2>
+          <p>All data in transit uses TLS 1.2+. Data at rest is encrypted by the underlying cloud provider (Cloudflare / PostgreSQL encryption).</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Audit logs</h2>
+          <p>We maintain append-only audit logs for account creation, CSV import, score generation, action completion, and risk checks. Logs include actor, action, target, timestamp, and source.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Data retention</h2>
+          <p>Default retention follows your workspace plan settings. You can request deletion of workspace data at any time via Settings or by emailing security@cios.iai.one.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Subprocessors</h2>
+          <p>We use Cloudflare (hosting, Workers, Pages, D1), and PostgreSQL-compatible providers for persistent storage. No customer data is sold or used for model training without explicit consent.</p>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Contact</h2>
+          <p>Report security concerns to <a href="mailto:security@cios.iai.one">security@cios.iai.one</a>. We aim to respond within 48 hours.</p>
+        </section>
+      </main>
+
+      <footer class="cios-footer" role="contentinfo">
+        <p>CIOS — Customer Intelligence Operating System</p>
+        <p>
+          <a href="/legal/privacy.html">Privacy</a> ·
+          <a href="/legal/terms.html">Terms</a> ·
+          <a href="/security/">Security</a> ·
+          <a href="/contact/">Contact</a>
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

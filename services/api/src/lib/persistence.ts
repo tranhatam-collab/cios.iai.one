@@ -6,6 +6,8 @@ export type WorkerEnv = {
   JWT_ISSUER?: string;
   JWT_AUDIENCE?: string;
   FLOW_WEBHOOK_SECRET?: string;
+  AUTH_DEMO_EMAIL?: string;
+  AUTH_DEMO_PASSWORD?: string;
 };
 
 let initPromise: Promise<void> | null = null;

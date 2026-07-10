@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Accounts — company intelligence list." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Accounts — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div><button id="logout-btn" class="cios-btn">Log out</button></div>
+      </header>
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Accounts</h1>
+        <div class="cios-filters">
+          <input id="search-input" type="text" placeholder="Search by name, domain, industry..." />
+          <select id="stage-filter">
+            <option value="">All stages</option>
+            <option value="new">New</option>
+            <option value="qualified">Qualified</option>
+            <option value="proposal">Proposal</option>
+          </select>
+          <button id="search-btn" class="cios-btn cios-btn-primary">Search</button>
+        </div>
+        <div id="accounts-table"></div>
+      </main>
+    </div>
+    <script type="module">
+      import { renderSidebar, apiGet, renderEmpty, scoreBadge, riskBadge, bindLogout } from "/js/app-shell.js";
+      renderSidebar("/app/accounts/");
+      bindLogout();
+
+      async function loadAccounts() {
+        const q = document.getElementById("search-input").value.trim();
+        const stage = document.getElementById("stage-filter").value;
+        const container = document.getElementById("accounts-table");
+        try {
+          const res = await apiGet("/v1/crm/organizations" + (q ? `?search=${encodeURIComponent(q)}` : ""));
+          let orgs = res?.data?.organizations ?? [];
+          if (stage) orgs = orgs.filter(o => o.stage === stage);
+          if (orgs.length === 0) {
+            renderEmpty(container, "No accounts found.");
+            return;
+          }
+          container.innerHTML = `<table class="cios-table"><thead><tr><th>Company</th><th>Industry</th><th>Score</th><th>Stage</th><th>Owner</th></tr></thead><tbody>` +
+            orgs.map(o =>
+              `<tr><td><a href="detail.html?id=${encodeURIComponent(o.id)}">${o.name}</a><br/><small style="color:var(--cios-muted);">${o.domain}</small></td><td>${o.industry}</td><td>${scoreBadge(o.fitScore)}</td><td>${o.stage}</td><td>${o.owner}</td></tr>`
+            ).join("") + `</tbody></table>`;
+        } catch {
+          renderEmpty(container, "Could not load accounts.");
+        }
+      }
+
+      document.getElementById("search-btn").addEventListener("click", loadAccounts);
+      document.getElementById("search-input").addEventListener("keydown", e => { if (e.key === "Enter") loadAccounts(); });
+      loadAccounts();
+    </script>
+  </body>
+</html>

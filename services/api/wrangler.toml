@@ -9,14 +9,16 @@ enabled = true
 API_CONTRACT = "phase2-workers-v1"
 JWT_ISSUER = "cios.iai.one"
 JWT_AUDIENCE = "cios-workers-api"
-# Optional. If set, /v1/flow/callback requires x-flow-signature (HMAC-SHA256).
-# FLOW_WEBHOOK_SECRET should be configured via wrangler secret.
+AUTH_DEMO_EMAIL = "admin@iai.one"
+# AUTH_DEMO_PASSWORD — optional wrangler secret (defaults to demo123456 in worker)
+# JWT_SECRET — set via: npx wrangler secret put JWT_SECRET
 
 [[d1_databases]]
 binding = "CIOS_DB"
 database_name = "cios-workers-api-db"
-database_id = "5ccf0c5b-cbd4-42b5-a66b-5c089267e311"
+database_id = "d4f3a44d-8f6e-4344-8679-749123c7aa33"
 
-[[kv_namespaces]]
-binding = "CIOS_KV"
-id = "a5293161814747568d3774a69f8456ad"
+# KV optional — uncomment after: npx wrangler kv namespace create CIOS_KV
+# [[kv_namespaces]]
+# binding = "CIOS_KV"
+# id = "REPLACE_WITH_NEW_KV_ID"

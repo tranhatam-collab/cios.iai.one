@@ -24,6 +24,14 @@ import type { WorkerEnv } from "./lib/persistence";
 import { enforceRateLimit } from "./lib/rate-limit";
 import { verifyFlowSignature } from "./lib/signature";
 import { parseJsonBody } from "./lib/validation";
+import { corsPreflight, withCors } from "./lib/cors";
+import {
+  handleAuthLogout,
+  handleAuthMe,
+  handleAuthRegister,
+  handleAuthSession,
+  handleMeta
+} from "./lib/session-auth";
 
 function parsePositiveInt(value: string | null, fallback: number): number {
   if (!value) return fallback;
@@ -152,10 +160,43 @@ async function authorize(
 
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+    const preflight = corsPreflight(request);
+    if (preflight) return preflight;
+
+    const response = await handleRequest(request, env);
+    return withCors(response, request);
+  }
+};
+
+async function handleRequest(request: Request, env: WorkerEnv): Promise<Response> {
     const url = new URL(request.url);
     const traceId = request.headers.get("x-trace-id") ?? makeTraceId();
     const method = request.method.toUpperCase();
     const path = url.pathname;
+
+    if (method === "GET" && path === "/health") {
+      return handleSystemHealth(traceId);
+    }
+
+    if (method === "GET" && path === "/v1/meta") {
+      return handleMeta(env, traceId);
+    }
+
+    if (method === "POST" && path === "/v1/auth/register") {
+      return handleAuthRegister(request, env, traceId);
+    }
+
+    if (method === "POST" && path === "/v1/auth/session") {
+      return handleAuthSession(request, env, traceId);
+    }
+
+    if (method === "GET" && path === "/v1/auth/me") {
+      return handleAuthMe(request, env, traceId);
+    }
+
+    if (method === "POST" && path === "/v1/auth/logout") {
+      return handleAuthLogout(request, env, traceId);
+    }
 
     if (method === "GET" && path === "/v1/system/state") {
       return handleSystemState(traceId);
@@ -534,5 +575,4 @@ export default {
     }
 
     return fail(404, "NOT_FOUND", "Route not found.", { method, path }, traceId);
-  }
-};
+}

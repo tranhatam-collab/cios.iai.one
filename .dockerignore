@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+coverage
+.DS_Store
+*.log
+.wrangler/
+.git
+.github
+site/cios/
+site/enterprise-deck/
+*.md
+claude_worktrees/
+.claude/
+.devin/

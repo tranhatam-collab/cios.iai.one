@@ -1,0 +1,147 @@
+/* CIOS App Shell Styles */
+.cios-app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar main";
+  min-height: 100vh;
+}
+
+.cios-sidebar {
+  grid-area: sidebar;
+  background: var(--cios-surface, #fff);
+  border-right: 1px solid var(--cios-border, #e5e7eb);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cios-sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--cios-text, #111827);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.cios-sidebar a:hover,
+.cios-sidebar a[aria-current="page"] {
+  background: var(--cios-brand-bg, #eff6ff);
+  color: var(--cios-brand, #2563eb);
+}
+
+.cios-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid var(--cios-border, #e5e7eb);
+  background: var(--cios-surface, #fff);
+}
+
+.cios-app-main {
+  grid-area: main;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.cios-page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.cios-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cios-surface, #fff);
+  border: 1px solid var(--cios-border, #e5e7eb);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.cios-table th,
+.cios-table td {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--cios-border, #e5e7eb);
+}
+
+.cios-table th {
+  background: var(--cios-muted-bg, #f3f4f6);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cios-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cios-badge-green { background: #dcfce7; color: #166534; }
+.cios-badge-yellow { background: #fef9c3; color: #854d0e; }
+.cios-badge-red { background: #fee2e2; color: #991b1b; }
+.cios-badge-blue { background: #dbeafe; color: #1e40af; }
+
+.cios-empty {
+  padding: 2rem;
+  text-align: center;
+  color: var(--cios-muted, #6b7280);
+}
+
+.cios-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--cios-border, #e5e7eb);
+  background: var(--cios-surface, #fff);
+  color: var(--cios-text, #111827);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.cios-btn-primary {
+  background: var(--cios-brand, #2563eb);
+  color: #fff;
+  border-color: var(--cios-brand, #2563eb);
+}
+
+.cios-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.cios-filters input,
+.cios-filters select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--cios-border, #e5e7eb);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .cios-app-shell {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "main";
+  }
+  .cios-sidebar {
+    display: none;
+  }
+}

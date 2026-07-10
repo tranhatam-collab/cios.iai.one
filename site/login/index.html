@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Login — Sign in to your account." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Login — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <a href="/" style="text-decoration:none;color:inherit;"><strong>CIOS</strong></a>
+          <span>Decision Operating System</span>
+        </div>
+      </header>
+
+      <main class="cios-main" id="main" style="max-width:420px;margin:3rem auto;">
+        <section class="cios-story-block">
+          <h1 style="text-align:center;">Sign In</h1>
+          <form id="login-form" style="display:flex;flex-direction:column;gap:1rem;">
+            <div>
+              <label>Email</label>
+              <input id="email" type="email" required placeholder="you@company.com" style="width:100%;padding:0.6rem;border-radius:0.4rem;border:1px solid var(--cios-border);" />
+            </div>
+            <div>
+              <label>Password</label>
+              <input id="password" type="password" required placeholder="••••••••" style="width:100%;padding:0.6rem;border-radius:0.4rem;border:1px solid var(--cios-border);" />
+            </div>
+            <div>
+              <label>Workspace</label>
+              <input id="workspace" type="text" value="demo" required style="width:100%;padding:0.6rem;border-radius:0.4rem;border:1px solid var(--cios-border);" />
+            </div>
+            <button type="submit" class="cios-cta cios-cta-primary" style="width:100%;">Sign In</button>
+          </form>
+
+          <div style="text-align:center;margin:1.5rem 0;">
+            <span style="color:var(--cios-muted);">or</span>
+          </div>
+
+          <a href="/v1/auth/google" class="cios-cta cios-cta-secondary" style="width:100%;display:block;text-align:center;text-decoration:none;">
+            Sign in with Google
+          </a>
+
+          <p style="text-align:center;margin-top:1.5rem;color:var(--cios-muted);">
+            Don't have an account? <a href="/register/">Register</a>
+          </p>
+          <p id="error-msg" style="color:#991b1b;text-align:center;margin-top:1rem;"></p>
+        </section>
+      </main>
+
+      <footer class="cios-footer" role="contentinfo">
+        <p>
+          <a href="/legal/privacy.html">Privacy</a> ·
+          <a href="/legal/terms.html">Terms</a> ·
+          <a href="/security/">Security</a>
+        </p>
+      </footer>
+    </div>
+
+    <script type="module">
+      import {
+        apiPost,
+        apiUrl,
+        getToken,
+        setToken
+      } from "/js/api-client.js";
+
+      const token = getToken();
+      if (token) {
+        window.location.href = "/app/";
+      }
+
+      const googleLink = document.querySelector('a[href="/v1/auth/google"]');
+      if (googleLink) {
+        googleLink.href = apiUrl("/v1/auth/google");
+      }
+
+      const form = document.getElementById("login-form");
+      const errorMsg = document.getElementById("error-msg");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorMsg.textContent = "";
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const workspaceCode = document.getElementById("workspace").value;
+
+        try {
+          const data = await apiPost("/v1/auth/session", {
+            email,
+            password,
+            workspaceCode
+          });
+
+          if (data.data?.token) {
+            setToken(data.data.token);
+            window.location.href = "/app/";
+          } else {
+            errorMsg.textContent = "Unexpected response.";
+          }
+        } catch (err) {
+          errorMsg.textContent = err?.message || "Network error. Please try again.";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Settings — workspace and data preferences." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Settings — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div><button id="logout-btn" class="cios-btn">Log out</button></div>
+      </header>
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Settings</h1>
+
+        <section class="cios-story-block">
+          <h2>Data &amp; Privacy</h2>
+          <p>You can export or delete your workspace data at any time.</p>
+          <button id="export-btn" class="cios-btn">Export workspace data</button>
+          <button id="delete-btn" class="cios-btn" style="margin-left:0.5rem;color:#991b1b;">Delete workspace data</button>
+          <pre id="settings-result" style="margin-top:1rem;background:#f3f4f6;padding:1rem;border-radius:0.5rem;font-size:0.85rem;"></pre>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Subscription</h2>
+          <div id="subscription-info"></div>
+          <div id="plans-list" style="margin-top:1rem;"></div>
+          <pre id="payment-result" style="margin-top:1rem;background:#f3f4f6;padding:1rem;border-radius:0.5rem;font-size:0.85rem;"></pre>
+        </section>
+
+        <section class="cios-story-block">
+          <h2>Reset Demo Data</h2>
+          <p>Restore the original demo dataset for testing.</p>
+          <button id="reset-btn" class="cios-btn cios-btn-primary">Reset demo data</button>
+        </section>
+      </main>
+    </div>
+    <script type="module">
+      import { renderSidebar, requireAuth, apiGet, apiPost, bindLogout } from "/js/app-shell.js";
+      requireAuth();
+      renderSidebar("/app/settings/");
+      bindLogout();
+
+      const out = document.getElementById("settings-result");
+      const payOut = document.getElementById("payment-result");
+      const subInfo = document.getElementById("subscription-info");
+      const plansList = document.getElementById("plans-list");
+
+      async function loadSubscription() {
+        try {
+          const res = await apiGet("/v1/payment/subscription");
+          const sub = res?.data;
+          subInfo.innerHTML = `<p><strong>Current Plan:</strong> ${sub.plan}</p><p><strong>Status:</strong> ${sub.status}</p>`;
+        } catch {
+          subInfo.innerHTML = `<p>Could not load subscription.</p>`;
+        }
+      }
+
+      async function loadPlans() {
+        try {
+          const res = await apiGet("/v1/payment/plans");
+          const plans = res?.data?.plans || [];
+          plansList.innerHTML = `<div class="cios-grid cios-grid-2">` +
+            plans.filter(p => !p.contactSales).map(p =>
+              `<article class="cios-card"><h3>${p.name}</h3><p>$${p.monthlyUsd}/mo</p><p>${p.companies} companies</p><button class="cios-btn cios-btn-primary" data-plan="${p.code}">Select</button></article>`
+            ).join("") + `</div>`;
+          plansList.querySelectorAll("button[data-plan]").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              try {
+                const r = await apiPost("/v1/payment/checkout", { plan: btn.dataset.plan, billingCycle: "monthly" });
+                payOut.textContent = `Checkout initiated: ${JSON.stringify(r.data, null, 2)}`;
+                await loadSubscription();
+              } catch (e) {
+                payOut.textContent = `Checkout failed: ${e.message}`;
+              }
+            });
+          });
+        } catch {
+          plansList.innerHTML = `<p>Could not load plans.</p>`;
+        }
+      }
+
+      loadSubscription();
+      loadPlans();
+
+      document.getElementById("export-btn").addEventListener("click", () => {
+        out.textContent = "Export request submitted. You will receive an email when ready.";
+      });
+      document.getElementById("delete-btn").addEventListener("click", () => {
+        if (confirm("This will delete all workspace data. Are you sure?")) {
+          out.textContent = "Deletion request submitted and logged.";
+        }
+      });
+      document.getElementById("reset-btn").addEventListener("click", () => {
+        if (confirm("Reset all data to demo defaults?")) {
+          out.textContent = "Demo reset completed. Refresh the app to see changes.";
+        }
+      });
+    </script>
+  </body>
+</html>

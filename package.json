@@ -16,6 +16,8 @@
     "db:migrate": "tsx src/scripts/run-migrations.ts",
     "smoke:workers": "bash scripts/smoke-workers-e2e.sh",
     "smoke:workers:strict": "bash scripts/smoke-workers-e2e.sh --strict",
+    "deploy:workers": "bash scripts/deploy-workers-api.sh",
+    "deploy:workers:dry-run": "SKIP_DEPLOY=1 bash scripts/deploy-workers-api.sh",
     "predeploy:pages": "npm run sync:site-version",
     "deploy:pages": "wrangler pages deploy site --project-name=cios-iai-one"
   },

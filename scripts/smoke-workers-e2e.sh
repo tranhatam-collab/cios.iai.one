@@ -11,7 +11,7 @@ if [ -f "$ENV_FILE" ]; then
   set +a
 fi
 
-API_BASE_URL="${WORKERS_API_URL:-https://cios-workers-api.tranhatam66.workers.dev}"
+API_BASE_URL="${WORKERS_API_URL:-https://cios-workers-api.tranhatam.workers.dev}"
 STRICT_MODE="false"
 
 if [ "${1:-}" = "--strict" ]; then

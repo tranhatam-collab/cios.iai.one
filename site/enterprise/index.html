@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta
+      name="description"
+      content="CIOS Enterprise — SSO, custom sources, DPA, private deployment, and advanced compliance for large teams."
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <title>Enterprise — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body>
+    <a class="cios-skip" href="#main">Skip to content</a>
+
+    <div class="cios-app">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <a href="/" style="text-decoration:none;color:inherit;"><strong>CIOS</strong></a>
+          <span data-i18n-en="Decision Operating System" data-i18n-vi="Hệ điều hành ra quyết định">Decision Operating System</span>
+        </div>
+        <div class="cios-header-actions">
+          <button class="cios-pill cios-lang-btn" type="button" data-lang-toggle>VI</button>
+          <a class="cios-pill" href="/pricing/">Pricing</a>
+          <a class="cios-pill" href="/security/">Security</a>
+          <a class="cios-pill" href="/enterprise/">Enterprise</a>
+          <a class="cios-pill" href="/contact/">Contact</a>
+          <a class="cios-pill" href="/app/">Open app</a>
+        </div>
+      </header>
+
+      <main class="cios-main" id="main" role="main" tabindex="-1">
+        <section class="cios-hero" aria-labelledby="enterprise-title">
+          <p class="cios-eyebrow">Enterprise</p>
+          <h1 id="enterprise-title" data-i18n-en="Customer intelligence at scale." data-i18n-vi="Customer intelligence ở quy mô lớn.">Customer intelligence at scale.</h1>
+        </section>
+
+        <section class="cios-grid cios-grid-3">
+          <article class="cios-card">
+            <h3>SSO &amp; Identity</h3>
+            <p>Connect your existing identity provider. Enforce MFA and session policies across the team.</p>
+          </article>
+          <article class="cios-card">
+            <h3>Custom sources</h3>
+            <p>Ingest from proprietary APIs, private registries, and internal databases into the CIOS scoring engine.</p>
+          </article>
+          <article class="cios-card">
+            <h3>Data Processing Agreement</h3>
+            <p>We provide a standard DPA and can accommodate custom compliance requirements for regulated industries.</p>
+          </article>
+          <article class="cios-card">
+            <h3>Private deployment</h3>
+            <p>Dedicated Cloudflare Workers and isolated D1 / PostgreSQL instances for strict data residency.</p>
+          </article>
+          <article class="cios-card">
+            <h3>Advanced compliance</h3>
+            <p>Review queues, suppression lists, retention rules, and export/deletion workflows built in.</p>
+          </article>
+          <article class="cios-card">
+            <h3>Priority support</h3>
+            <p>Dedicated support channel with SLAs, onboarding assistance, and quarterly business reviews.</p>
+          </article>
+        </section>
+
+        <section class="cios-compliance">
+          <h2>Talk to our team</h2>
+          <p>We will build a custom plan based on your data volume, team size, and compliance requirements.</p>
+          <a class="cios-cta" href="/contact/">Request enterprise demo</a>
+        </section>
+      </main>
+
+      <footer class="cios-footer" role="contentinfo">
+        <p>CIOS — Customer Intelligence Operating System</p>
+        <p>
+          <a href="/legal/privacy.html">Privacy</a> ·
+          <a href="/legal/terms.html">Terms</a> ·
+          <a href="/security/">Security</a> ·
+          <a href="/contact/">Contact</a>
+        </p>
+      </footer>
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
