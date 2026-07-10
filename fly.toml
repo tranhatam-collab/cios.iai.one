@@ -8,7 +8,7 @@ primary_region = "sin"
   NODE_ENV = "production"
   APP_BASE_URL = "https://cios-api.fly.dev"
   FRONTEND_URL = "https://cios.iai.one"
-  AIAGENT_API_URL = "https://aiagent.iai.one"
+  AIAGENT_API_URL = "https://api.aiagent.iai.one"
 
 [[services]]
   internal_port = 8080
