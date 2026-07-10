@@ -1,47 +1,55 @@
-# CIOS.IAI.ONE – Constitutional Intelligence Operating System
+# CIOS.IAI.ONE — Constitutional Intelligence Operating System
 
-**Hệ điều hành Trí tuệ Tuân thủ Hiến pháp** – AI Agent Flow Control Layer của IAI.ONE.
+**Hệ điều hành trí tuệ tuân thủ hiến pháp** — enterprise intelligence product trong hệ `*.iai.one`.
 
-## Vision
+**Trạng thái vận hành:** xem `STATUS.md`
 
-Mọi Agent swarm đều **bắt buộc tuân thủ Charter cá nhân on-chain** (từ i ai.one).
+---
 
-## Tech Stack
+## English reference
 
-- Frontend: Next.js 15 + React 19 (CF Pages)
-- State: Zustand + Tanstack Query
-- Auth: Privy + WalletConnect
-- Backend: CF Worker (`api.cios.iai.one`)
-- On-chain: Base + IAI token (Charter NFT)
-- Physical: Peaq SDK + WebLLM (on-device)
+Enterprise intelligence product under the IAI ecosystem. Canonical API is Cloudflare Workers.
 
-## Quick Start (DEV)
+---
 
-1. `pnpm install`
-2. `cp .env.example .env`
-3. `pnpm dev`
+## Live stack (2026-07-10)
 
-## Runbooks
+| Layer | Technology | URL |
+|-------|------------|-----|
+| Frontend | Cloudflare Pages (`site/`) | `https://cios.iai.one` |
+| API (canonical) | Cloudflare Workers | `https://cios-workers-api.tranhatam.workers.dev` |
+| Auth | JWT via Workers `/v1/auth/*` | See path lock in `STATUS.md` |
+| AIAgent | `api.aiagent.iai.one` | `POST /v1/agent/chat` |
 
-- Deploy + smoke runbook: `docs/DEPLOY_AND_SMOKE_RUNBOOK.md`
-- Workers smoke (normal): `npm run smoke:workers`
-- Workers smoke (strict): `npm run smoke:workers:strict`
+**Không dùng:** `cios-api.fly.dev` (DNS dead), `api.cios.iai.one` (chưa canonical).
+
+---
+
+## Quick start (dev)
+
+```bash
+pnpm install
+cp .env.example .env
+pnpm dev
+```
+
+## Deploy + smoke
+
+- `docs/API_BACKEND_DEBUG_RUNBOOK.md`
+- `npm run smoke:workers`
+- `npm run smoke:workers:strict`
 
 ## Structure
 
 ```text
-/app
-  /dashboard     ← Main shell
-  /charter       ← Constitutional panel
-  /agents        ← Swarm manager
-/components
-  /charter-enforcement
-/public
-  /tokens.css    ← Design tokens global
+site/              ← Pages frontend (live)
+services/api/      ← Workers API (canonical)
+src/               ← Fastify app (Fly — optional, not live)
+docs/              ← Runbooks
 ```
 
 ## Contributing
 
-Tuân thủ Charter IAI.ONE. Mọi PR phải pass Charter Enforcement check.
+Tuân thủ `iai.one-platform/content/iai-language-standard-lock.md` và path lock `/v1/auth/*` trong mọi báo cáo.
 
-Phiên bản hiện tại: v1.1.0 → Target v2.0.0 “Constitutional Launch”
+Phiên bản: v1.1.0

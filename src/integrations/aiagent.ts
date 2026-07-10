@@ -83,7 +83,7 @@ ${params.signals.map((s) => `- ${s.type}: ${s.summary} (confidence ${s.confidenc
 
 Return ONLY valid JSON with keys: fit_score (0-100), timing_score (0-100), risk_score (0-100), overall_score (0-100), reasoning (string).`;
 
-  const res = await aiAgentFetch("/v1/agent", {
+  const res = await aiAgentFetch("/v1/agent/chat", {
     mode: "text",
     input: prompt,
     metadata: { surface: "cios", feature: "scoring" },
@@ -164,7 +164,7 @@ Text: ${params.rawText.slice(0, 4000)}
 
 Return ONLY a JSON array of objects with keys: type (hiring|funding|website_change|news_mention|product_launch|tech_change|leadership_change|expansion|risk), title, summary, confidence (0-100), impact (low|medium|high). Max 5 signals.`;
 
-  const res = await aiAgentFetch("/v1/agent", {
+  const res = await aiAgentFetch("/v1/agent/chat", {
     mode: "text",
     input: prompt,
     metadata: { surface: "cios", feature: "signal-detection" },
@@ -265,7 +265,7 @@ Notes: ${params.notes || "None"}
 
 Return ONLY valid JSON with keys: risk_level (low|medium|high), safe_to_act (boolean), flags (array of strings), summary (string).`;
 
-  const res = await aiAgentFetch("/v1/agent", {
+  const res = await aiAgentFetch("/v1/agent/chat", {
     mode: "text",
     input: prompt,
     metadata: { surface: "cios", feature: "risk-assessment" },
@@ -339,7 +339,7 @@ Signal Count: ${params.signalsCount}
 
 Return ONLY valid JSON with keys: action_type (prepare_outreach|research_more|watchlist|request_review|do_not_contact), title, body, priority (low|medium|high|urgent).`;
 
-  const res = await aiAgentFetch("/v1/agent", {
+  const res = await aiAgentFetch("/v1/agent/chat", {
     mode: "text",
     input: prompt,
     metadata: { surface: "cios", feature: "action-recommendation" },
