@@ -34,6 +34,8 @@ async function aiAgentFetch(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${env.AIAGENT_API_KEY}`,
+        "X-Tenant-Id": "cios-iai",
+        "X-Client-Contract": "cios-ai-gateway/1.0",
       },
       body: JSON.stringify(body),
     });
