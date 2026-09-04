@@ -4,14 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_FILE="${ROOT_DIR}/.env"
 
-if [ -f "$ENV_FILE" ]; then
+if [ "${CI:-}" != "true" ] && [ -f "$ENV_FILE" ]; then
   set -a
   # shellcheck disable=SC1090
   source "$ENV_FILE"
   set +a
 fi
 
-API_BASE_URL="${WORKERS_API_URL:-https://cios-workers-api.tranhatam.workers.dev}"
+node "${ROOT_DIR}/scripts/smoke-workers-preflight.mjs"
+API_BASE_URL="${WORKERS_API_URL%/}"
+# Bounded, no redirect following; fail on HTTP errors before parsing envelopes.
+curl() { command curl --fail --connect-timeout 10 --max-time 30 "$@"; }
 STRICT_MODE="false"
 
 if [ "${1:-}" = "--strict" ]; then
@@ -85,10 +88,16 @@ if [ -z "$FLOW_RUN_ID" ]; then
   exit 1
 fi
 
+CALLBACK_BODY="{\"flow_run_id\":\"${FLOW_RUN_ID}\",\"trigger_name\":\"smoke.flow.callback\",\"status\":\"success\",\"completed_at\":\"2026-04-03T00:30:00.000Z\",\"trace_id\":\"trace_smoke_bundle_001\",\"result\":{\"message\":\"callback completed\"}}"
+CALLBACK_HEADERS=()
+if [ -n "${FLOW_WEBHOOK_SECRET:-}" ]; then
+  CALLBACK_SIGNATURE="$(printf '%s' "$CALLBACK_BODY" | node -e 'const c=require("node:crypto");let b="";process.stdin.on("data",d=>b+=d);process.stdin.on("end",()=>process.stdout.write(c.createHmac("sha256",process.env.FLOW_WEBHOOK_SECRET).update(b).digest("hex")))')"
+  CALLBACK_HEADERS=(-H "x-flow-signature: ${CALLBACK_SIGNATURE}")
+fi
 CALLBACK_RESPONSE="$(
   curl -sS -X POST "${API_BASE_URL}/v1/flow/callback" \
-    "${REQUEST_HEADERS[@]}" \
-    -d "{\"flow_run_id\":\"${FLOW_RUN_ID}\",\"trigger_name\":\"smoke.flow.callback\",\"status\":\"success\",\"completed_at\":\"2026-04-03T00:30:00.000Z\",\"trace_id\":\"trace_smoke_bundle_001\",\"result\":{\"message\":\"callback completed\"}}"
+    "${REQUEST_HEADERS[@]}" "${CALLBACK_HEADERS[@]}" \
+    -d "$CALLBACK_BODY"
 )"
 
 FLOW_LOGS_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/flow/logs" -H "Authorization: Bearer ${TOKEN}")"
