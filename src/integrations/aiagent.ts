@@ -4,17 +4,32 @@ import { logger } from "../bootstrap/logger.js";
 const AIAGENT_BASE = env.AIAGENT_API_URL.replace(/\/$/, "");
 
 export interface AiAgentRequest {
-  mode?: string;
-  input?: string;
-  messages?: Array<{ role: string; content: string }>;
+  messages: Array<{ role: string; content: string }>;
+  model_preference?: string;
+  language?: string;
   metadata?: { surface?: string; feature?: string };
+}
+
+export interface AiAgentReceipt {
+  run_id?: string;
+  tenant_id?: string;
+  model?: string;
+  content?: string;
+  receipt?: {
+    gateway_run_id?: string;
+    tenant_id?: string;
+    model?: string;
+    usage?: { cost_usd?: number | null; authoritative?: boolean };
+  };
 }
 
 export interface AiAgentResponse {
   ok: boolean;
   output?: string;
   data?: unknown;
+  receipt?: AiAgentReceipt;
   error?: { code: string; message: string };
+  fallback?: boolean;
 }
 
 async function aiAgentFetch(
@@ -34,6 +49,8 @@ async function aiAgentFetch(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${env.AIAGENT_API_KEY}`,
+        "X-Tenant-Id": "cios-iai",
+        "X-Client-Contract": "cios-ai-gateway/1.0",
       },
       body: JSON.stringify(body),
     });
@@ -48,7 +65,33 @@ async function aiAgentFetch(
     }
 
     const data = (await res.json()) as Record<string, unknown>;
-    return { ok: true, output: (data.output as string) || "", data };
+    // Gateway returns { content, run_id, tenant_id, model, receipt } per chat contract
+    const content = (data.content as string) || (data.output as string) || "";
+    const receipt: AiAgentReceipt = {
+      run_id: data.run_id as string | undefined,
+      tenant_id: data.tenant_id as string | undefined,
+      model: data.model as string | undefined,
+      receipt: data.receipt as AiAgentReceipt["receipt"],
+    };
+    // Validate tenant isolation: gateway must return cios-iai
+    if (receipt.tenant_id && receipt.tenant_id !== "cios-iai") {
+      logger.error(
+        { expected: "cios-iai", got: receipt.tenant_id },
+        "aiagent tenant mismatch — possible cross-tenant leak",
+      );
+      return {
+        ok: false,
+        error: {
+          code: "TENANT_MISMATCH",
+          message: `Gateway returned tenant ${receipt.tenant_id}, expected cios-iai`,
+        },
+      };
+    }
+    // Validate run_id present (receipt-backed)
+    if (!receipt.run_id) {
+      logger.warn("aiagent response missing run_id — receipt not backed");
+    }
+    return { ok: true, output: content, data, receipt };
   } catch (err) {
     logger.error({ err }, "aiagent fetch failed");
     return {
@@ -84,13 +127,14 @@ ${params.signals.map((s) => `- ${s.type}: ${s.summary} (confidence ${s.confidenc
 Return ONLY valid JSON with keys: fit_score (0-100), timing_score (0-100), risk_score (0-100), overall_score (0-100), reasoning (string).`;
 
   const res = await aiAgentFetch("/v1/agent/chat", {
-    mode: "text",
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
+    model_preference: "iai-one/iris-7",
+    language: "en",
     metadata: { surface: "cios", feature: "scoring" },
   });
 
   if (!res.ok || !res.output) {
-    // Fallback rule-based scoring
+    // Fallback rule-based scoring — explicitly labeled as non-AI
     const signalCount = params.signals.length;
     const avgConfidence =
       signalCount > 0
@@ -108,8 +152,8 @@ Return ONLY valid JSON with keys: fit_score (0-100), timing_score (0-100), risk_
       riskScore: Math.round(riskScore),
       overallScore: Math.max(0, overallScore),
       reasoning: res.error
-        ? `AI unavailable (${res.error.code}). Fallback rule-based estimate.`
-        : "Fallback rule-based estimate.",
+        ? `[FALLBACK:NON-AI] AI unavailable (${res.error.code}). Rule-based estimate.`
+        : "[FALLBACK:NON-AI] Rule-based estimate.",
     };
   }
 
@@ -165,13 +209,14 @@ Text: ${params.rawText.slice(0, 4000)}
 Return ONLY a JSON array of objects with keys: type (hiring|funding|website_change|news_mention|product_launch|tech_change|leadership_change|expansion|risk), title, summary, confidence (0-100), impact (low|medium|high). Max 5 signals.`;
 
   const res = await aiAgentFetch("/v1/agent/chat", {
-    mode: "text",
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
+    model_preference: "iai-one/iris-7",
+    language: "en",
     metadata: { surface: "cios", feature: "signal-detection" },
   });
 
   if (!res.ok || !res.output) {
-    // Fallback: simple keyword extraction
+    // Fallback: simple keyword extraction — explicitly labeled as non-AI
     const text = params.rawText.toLowerCase();
     const signals = [];
     if (text.includes("hiring") || text.includes("jobs"))
@@ -266,13 +311,14 @@ Notes: ${params.notes || "None"}
 Return ONLY valid JSON with keys: risk_level (low|medium|high), safe_to_act (boolean), flags (array of strings), summary (string).`;
 
   const res = await aiAgentFetch("/v1/agent/chat", {
-    mode: "text",
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
+    model_preference: "iai-one/iris-7",
+    language: "en",
     metadata: { surface: "cios", feature: "risk-assessment" },
   });
 
   if (!res.ok || !res.output) {
-    // Fallback rule-based risk
+    // Fallback rule-based risk — explicitly labeled as non-AI
     const flags = [];
     if (!params.country) flags.push("missing_geography");
     if ((params.notes || "").length < 10) flags.push("low_context");
@@ -282,8 +328,8 @@ Return ONLY valid JSON with keys: risk_level (low|medium|high), safe_to_act (boo
       safeToAct: riskLevel === "low",
       flags,
       summary: res.error
-        ? `AI unavailable (${res.error.code}). Rule-based fallback.`
-        : "Rule-based risk estimate.",
+        ? `[FALLBACK:NON-AI] AI unavailable (${res.error.code}). Rule-based fallback.`
+        : "[FALLBACK:NON-AI] Rule-based risk estimate.",
     };
   }
 
@@ -340,13 +386,14 @@ Signal Count: ${params.signalsCount}
 Return ONLY valid JSON with keys: action_type (prepare_outreach|research_more|watchlist|request_review|do_not_contact), title, body, priority (low|medium|high|urgent).`;
 
   const res = await aiAgentFetch("/v1/agent/chat", {
-    mode: "text",
-    input: prompt,
+    messages: [{ role: "user", content: prompt }],
+    model_preference: "iai-one/iris-7",
+    language: "en",
     metadata: { surface: "cios", feature: "action-recommendation" },
   });
 
   if (!res.ok || !res.output) {
-    // Fallback rule-based recommendation
+    // Fallback rule-based recommendation — explicitly labeled as non-AI
     const score = params.overallScore;
     const risk = params.riskLevel;
     if (score >= 80 && risk === "low")
