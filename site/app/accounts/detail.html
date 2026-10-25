@@ -25,7 +25,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, apiPost, renderEmpty, scoreBadge, riskBadge, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, apiPost, renderEmpty, scoreBadge, bindLogout, requireAuth } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/accounts/");
       bindLogout();
 

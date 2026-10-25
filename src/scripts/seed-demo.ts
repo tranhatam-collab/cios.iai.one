@@ -66,7 +66,8 @@ async function seed() {
 
   let signalCount = 0;
   for (let i = 0; i < 80; i++) {
-    const companyIdx = i % companies.length;
+    const _companyIdx = i % companies.length;
+    void _companyIdx;
     const type = signalTypes[i % signalTypes.length];
     const sourceUrl = sources[i % sources.length] + `?sig=${i}`;
     const confidence = 50 + (i % 45);

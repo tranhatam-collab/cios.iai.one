@@ -12,6 +12,7 @@ export async function signHs256Jwt(
   const header = { alg: "HS256", typ: "JWT" };
   const fullPayload = {
     ...payload,
+    jti: typeof payload.jti === "string" ? payload.jti : crypto.randomUUID(),
     iat: now,
     nbf: now - 5,
     exp: now + expiresInSec

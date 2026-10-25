@@ -101,3 +101,15 @@ export function bindLogout() {
     window.location.href = "/login/";
   });
 }
+
+/** Normalize Workers/Fastify list envelopes for /app pages. */
+export function unwrapList(payload, keys = []) {
+  if (!payload || typeof payload !== "object") return [];
+  const data = payload.data ?? payload;
+  if (Array.isArray(data)) return data;
+  for (const key of keys) {
+    const value = data?.[key];
+    if (Array.isArray(value)) return value;
+  }
+  return [];
+}

@@ -13,14 +13,37 @@ fi
 
 API_BASE_URL="${WORKERS_API_URL:-https://cios-workers-api.tranhatam.workers.dev}"
 STRICT_MODE="false"
+READ_ONLY_MODE="false"
 
-if [ "${1:-}" = "--strict" ]; then
-  STRICT_MODE="true"
-fi
+case "${1:-}" in
+  --strict) STRICT_MODE="true" ;;
+  --read-only) READ_ONLY_MODE="true" ;;
+esac
 
-if [ -z "${JWT_SECRET:-}" ]; then
+if [ -z "${JWT_SECRET:-}" ] && [ "$READ_ONLY_MODE" != "true" ]; then
   printf 'ERROR: JWT_SECRET is missing. Set it in .env or environment.\n' >&2
   exit 1
+fi
+
+HEALTH_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/system/health")"
+META_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/meta")"
+
+node -e '
+  const health = JSON.parse(process.argv[1] || "{}");
+  const meta = JSON.parse(process.argv[2] || "{}");
+  if (!health?.ok || health?.data?.status !== "healthy") {
+    console.error("READ_ONLY_CHECK_FAILED: health not healthy");
+    process.exit(1);
+  }
+  if (!meta?.ok || !meta?.data?.service) {
+    console.error("READ_ONLY_CHECK_FAILED: meta missing service");
+    process.exit(1);
+  }
+  console.log(JSON.stringify({ mode: "read-only", health, meta }, null, 2));
+' "$HEALTH_RESPONSE" "$META_RESPONSE"
+
+if [ "$READ_ONLY_MODE" = "true" ]; then
+  exit 0
 fi
 
 TOKEN="$(
@@ -32,6 +55,7 @@ TOKEN="$(
     const payload = {
       sub: "smoke-user",
       role: "governor",
+      jti: crypto.randomUUID(),
       iss: "cios.iai.one",
       aud: "cios-workers-api",
       iat: now,
@@ -53,8 +77,6 @@ REQUEST_HEADERS=(
 
 INGEST_KEY="smoke-ingest-$(date +%s)"
 FLOW_KEY="smoke-flow-$(date +%s)"
-
-HEALTH_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/system/health" -H "Authorization: Bearer ${TOKEN}")"
 
 INGEST_RESPONSE="$(
   curl -sS -X POST "${API_BASE_URL}/v1/events/ingest" \
@@ -85,11 +107,25 @@ if [ -z "$FLOW_RUN_ID" ]; then
   exit 1
 fi
 
-CALLBACK_RESPONSE="$(
-  curl -sS -X POST "${API_BASE_URL}/v1/flow/callback" \
-    "${REQUEST_HEADERS[@]}" \
-    -d "{\"flow_run_id\":\"${FLOW_RUN_ID}\",\"trigger_name\":\"smoke.flow.callback\",\"status\":\"success\",\"completed_at\":\"2026-04-03T00:30:00.000Z\",\"trace_id\":\"trace_smoke_bundle_001\",\"result\":{\"message\":\"callback completed\"}}"
-)"
+# Callback requires FLOW_WEBHOOK_SECRET when configured — skip unsigned forge against fail-closed API
+if [ -n "${FLOW_WEBHOOK_SECRET:-}" ]; then
+  CALLBACK_SIG="$(
+    node -e '
+      const crypto = require("crypto");
+      const body = process.argv[1];
+      const secret = process.env.FLOW_WEBHOOK_SECRET || "";
+      process.stdout.write(crypto.createHmac("sha256", secret).update(body).digest("hex"));
+    ' "{\"flow_run_id\":\"${FLOW_RUN_ID}\",\"trigger_name\":\"smoke.flow.callback\",\"status\":\"success\",\"completed_at\":\"2026-04-03T00:30:00.000Z\",\"trace_id\":\"trace_smoke_bundle_001\",\"result\":{\"message\":\"callback completed\"}}"
+  )"
+  CALLBACK_RESPONSE="$(
+    curl -sS -X POST "${API_BASE_URL}/v1/flow/callback" \
+      "${REQUEST_HEADERS[@]}" \
+      -H "x-flow-signature: ${CALLBACK_SIG}" \
+      -d "{\"flow_run_id\":\"${FLOW_RUN_ID}\",\"trigger_name\":\"smoke.flow.callback\",\"status\":\"success\",\"completed_at\":\"2026-04-03T00:30:00.000Z\",\"trace_id\":\"trace_smoke_bundle_001\",\"result\":{\"message\":\"callback completed\"}}"
+  )"
+else
+  CALLBACK_RESPONSE='{"ok":false,"error":{"code":"SKIPPED","message":"FLOW_WEBHOOK_SECRET unset — callback skipped"}}'
+fi
 
 FLOW_LOGS_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/flow/logs" -H "Authorization: Bearer ${TOKEN}")"
 AUDIT_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/governance/audit" -H "Authorization: Bearer ${TOKEN}")"
@@ -107,8 +143,14 @@ if [ "$STRICT_MODE" = "true" ]; then
       process.exit(1);
     }
 
-    if (!dispatch?.ok || !callback?.ok) {
-      fail("dispatch/callback did not return ok=true");
+    if (!dispatch?.ok) {
+      fail("dispatch did not return ok=true");
+    }
+    if (callback?.error?.code === "SKIPPED") {
+      fail("FLOW_WEBHOOK_SECRET required for strict mode");
+    }
+    if (!callback?.ok) {
+      fail("callback did not return ok=true");
     }
 
     const logs = Array.isArray(flowLogs?.data) ? flowLogs.data : [];

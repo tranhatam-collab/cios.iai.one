@@ -2,8 +2,8 @@
 
 **Surface:** `cios.iai.one`  
 **Role:** Enterprise intelligence product  
-**Updated:** 2026-07-10  
-**Verdict:** Sẵn sàng vận hành
+**Updated:** 2026-10-25  
+**Verdict:** HOLD — R1 candidate code complete; chờ Founder GO trên handoff `*.iai.one` trước deploy
 
 ## Canonical API
 
@@ -21,14 +21,26 @@
 
 ## Integrations
 
-- AIAgent: `https://api.aiagent.iai.one` → `POST /v1/agent/chat`
+- AIAgent: `https://api.aiagent.iai.one` → `POST /v1/agent/chat` (Fastify path; Workers chưa expose)
 - Frontend: `site/js/api-client.js` → Workers
 
-## Demo
+## Demo / auth
 
-`admin@iai.one` / `demo123456` / workspace `demo`
+Demo seed **tắt** trên production trừ khi `ALLOW_DEMO_SEED=true` **và** secret `AUTH_DEMO_PASSWORD` được set.  
+Không công bố mật khẩu production trong STATUS. Role register do server gán (`sales_rep`).
+
+## R1 surface (Workers + D1)
+
+- Auth: register role server-assigned; demo seed gated; JWT `jti` revoke; CORS allowlist
+- Product reads: `/v1/bootstrap`, `/v1/overview`, `/v1/crm/organizations`, `/v1/discovery/*`, `/v1/compliance/audit`, `/v1/review/queue`
+- Ngoài R1: Stripe/payment, Google OAuth, SSE, CRM write/import/enrich
+
+## Cloudflare account lock
+
+Production Pages/Workers: account `f3f9…` (domain `cios.iai.one`). CI dùng `secrets.CLOUDFLARE_ACCOUNT_ID` — không hard-code account khác.
 
 ## Open
 
-- [ ] Verify AIAgent với `AIAGENT_API_KEY`
-- [ ] UI copy audit vs i18n registry
+- [ ] Founder GO trên `docs/ops/status/IAI_ONE_MASTER_HANDOFF_AND_DEV_PLAN_2026-10-16.md` trước deploy R1
+- [ ] Staging smoke secrets: `SMOKE_WORKERS_API_URL`, `SMOKE_WORKERS_JWT_SECRET`
+- [ ] Verify AIAgent với `AIAGENT_API_KEY` (R2)

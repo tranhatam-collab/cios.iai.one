@@ -15,6 +15,12 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(1),
   LOG_LEVEL: z.string().min(1).default("info"),
   FLOW_WEBHOOK_SECRET: z.string().min(1).optional(),
+  AIAGENT_API_URL: z
+    .string()
+    .url()
+    .default("https://api.aiagent.iai.one"),
+  AIAGENT_API_KEY: z.string().min(1).optional(),
+  FRONTEND_URL: z.string().url().default("https://cios.iai.one"),
 });
 
 const parsed = envSchema.safeParse(process.env);

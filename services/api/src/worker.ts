@@ -32,6 +32,16 @@ import {
   handleAuthSession,
   handleMeta
 } from "./lib/session-auth";
+import {
+  buildBootstrap,
+  buildOverview,
+  getOrganization,
+  listComplianceAudit,
+  listCrawlGovernance,
+  listDiscoverySources,
+  listOrganizations,
+  listReviewQueue
+} from "./lib/product-store";
 
 function parsePositiveInt(value: string | null, fallback: number): number {
   if (!value) return fallback;
@@ -61,13 +71,18 @@ async function handleSystemState(traceId: string): Promise<Response> {
   return ok(
     {
       status: "operational",
-      trust_index: 72,
-      stress_index: 41,
-      risk_level: "medium"
+      trust_index: null,
+      stress_index: null,
+      risk_level: "unknown",
+      note: "Live indices not wired; values intentionally null until telemetry feed exists."
     },
-    { contract: "phase2-workers-v1" },
+    { contract: "phase2-workers-v1", source: "uninstrumented" },
     traceId
   );
+}
+
+function workspaceFromAuth(auth: AuthContext): string {
+  return String(auth.claims.workspaceCode ?? "demo");
 }
 
 async function handleSystemHealth(traceId: string): Promise<Response> {
@@ -183,10 +198,16 @@ async function handleRequest(request: Request, env: WorkerEnv): Promise<Response
     }
 
     if (method === "POST" && path === "/v1/auth/register") {
+      const clientIp = request.headers.get("cf-connecting-ip") ?? "unknown";
+      const rate = enforceRateLimit(`auth:register:${clientIp}`, 10, 60_000, traceId);
+      if (rate instanceof Response) return rate;
       return handleAuthRegister(request, env, traceId);
     }
 
     if (method === "POST" && path === "/v1/auth/session") {
+      const clientIp = request.headers.get("cf-connecting-ip") ?? "unknown";
+      const rate = enforceRateLimit(`auth:session:${clientIp}`, 20, 60_000, traceId);
+      if (rate instanceof Response) return rate;
       return handleAuthSession(request, env, traceId);
     }
 
@@ -516,7 +537,150 @@ async function handleRequest(request: Request, env: WorkerEnv): Promise<Response
       return ok(entries, { phase: "workers-contract", status: env.CIOS_DB ? "d1-audit" : "fallback-audit" }, traceId);
     }
 
+    if (method === "GET" && path === "/v1/bootstrap") {
+      const auth = await authorize(request, traceId, env, "observer", path, "bootstrap_read");
+      if (auth instanceof Response) return auth;
+      const data = await buildBootstrap(env, auth.claims);
+      return ok(data, { route: "/v1/bootstrap", source: "workers" }, traceId);
+    }
+
+    if (method === "GET" && path === "/v1/overview") {
+      const auth = await authorize(request, traceId, env, "observer", path, "overview_read");
+      if (auth instanceof Response) return auth;
+      const data = await buildOverview(env, workspaceFromAuth(auth));
+      return ok(data, { route: "/v1/overview", source: data.source }, traceId);
+    }
+
+    if (method === "GET" && path === "/v1/crm/organizations") {
+      const auth = await authorize(request, traceId, env, "observer", path, "crm_list");
+      if (auth instanceof Response) return auth;
+      const search = url.searchParams.get("q") ?? url.searchParams.get("search");
+      const result = await listOrganizations(env, workspaceFromAuth(auth), search);
+      return ok(
+        {
+          total: result.rows.length,
+          organizations: result.rows
+        },
+        { source: result.source },
+        traceId
+      );
+    }
+
+    if (method === "GET" && path.startsWith("/v1/crm/organizations/")) {
+      const rest = path.slice("/v1/crm/organizations/".length);
+      const segments = rest.split("/").filter(Boolean);
+      // Deferred R2 write/enrich paths must not be treated as organization ids.
+      if (
+        segments[0] === "import" ||
+        segments.includes("enrich") ||
+        segments.includes("analyze-website")
+      ) {
+        return fail(
+          501,
+          "NOT_IMPLEMENTED",
+          "Route deferred to R2 (outside R1 Working Product).",
+          { method, path },
+          traceId
+        );
+      }
+      if (segments.length !== 1) {
+        return fail(404, "NOT_FOUND", "Organization not found.", { path }, traceId);
+      }
+      const auth = await authorize(request, traceId, env, "observer", path, "crm_detail");
+      if (auth instanceof Response) return auth;
+      const id = decodeURIComponent(segments[0] ?? "");
+      const detail = await getOrganization(env, workspaceFromAuth(auth), id);
+      if (!detail) {
+        return fail(404, "NOT_FOUND", "Organization not found.", { id }, traceId);
+      }
+      return ok(
+        {
+          organization: {
+            id: detail.id,
+            name: detail.name,
+            domain: detail.domain,
+            industry: detail.industry,
+            fitScore: detail.fitScore,
+            intentScore: detail.intentScore,
+            stage: detail.stage,
+            owner: detail.owner,
+            nextActions: detail.nextActions,
+            lineage: detail.lineage
+          }
+        },
+        { source: "d1-or-seed" },
+        traceId
+      );
+    }
+
+    if (method === "GET" && path === "/v1/discovery/sources") {
+      const auth = await authorize(request, traceId, env, "observer", path, "discovery_sources");
+      if (auth instanceof Response) return auth;
+      const result = await listDiscoverySources(env, workspaceFromAuth(auth));
+      return ok(
+        {
+          queue: result.rows,
+          total: result.rows.length
+        },
+        { source: result.source },
+        traceId
+      );
+    }
+
+    if (method === "GET" && path === "/v1/discovery/crawl-governance") {
+      const auth = await authorize(request, traceId, env, "observer", path, "crawl_governance");
+      if (auth instanceof Response) return auth;
+      const result = await listCrawlGovernance(env, workspaceFromAuth(auth));
+      return ok(
+        {
+          decisions: result.rows,
+          total: result.rows.length
+        },
+        { source: result.source },
+        traceId
+      );
+    }
+
+    if (method === "GET" && (path === "/v1/review/queue" || path === "/v1/reviews")) {
+      const auth = await authorize(request, traceId, env, "observer", path, "review_queue");
+      if (auth instanceof Response) return auth;
+      const result = await listReviewQueue(env, workspaceFromAuth(auth));
+      return ok(
+        {
+          items: result.rows,
+          total: result.rows.length
+        },
+        { source: result.source },
+        traceId
+      );
+    }
+
+    if (method === "GET" && (path === "/v1/compliance/audit" || path === "/v1/compliance/audit-log")) {
+      const auth = await authorize(request, traceId, env, "observer", path, "compliance_audit");
+      if (auth instanceof Response) return auth;
+      const result = await listComplianceAudit(env, workspaceFromAuth(auth));
+      return ok(
+        {
+          audit: result.rows.map((row) => ({
+            at: row.createdAt,
+            actor: row.actor,
+            type: row.action,
+            message: `${row.result}${row.details ? ` — ${JSON.stringify(row.details)}` : ""}`,
+            id: row.id,
+            result: row.result,
+            details: row.details,
+            createdAt: row.createdAt
+          })),
+          entries: result.rows,
+          total: result.rows.length
+        },
+        { source: result.source },
+        traceId
+      );
+    }
+
     if (method === "GET" && path === "/v1/flow/logs") {
+      // Global flow logs are not workspace-scoped — keep governor (R1).
       const auth = await authorize(request, traceId, env, "governor", path, "flow_logs_read");
       if (auth instanceof Response) return auth;
       const q = readListQuery(url);
@@ -570,6 +734,23 @@ async function handleRequest(request: Request, env: WorkerEnv): Promise<Response
           sort: { by: q.sortBy, order: q.sortOrder },
           source: env.CIOS_DB ? "d1-aggregated" : "fallback-aggregated"
         },
+        traceId
+      );
+    }
+
+    if (
+      path.startsWith("/v1/payment/") ||
+      path.startsWith("/v1/auth/google") ||
+      path === "/v1/crm/organizations/import" ||
+      (method === "POST" && path === "/v1/crm/organizations") ||
+      path.endsWith("/enrich") ||
+      path.endsWith("/analyze-website")
+    ) {
+      return fail(
+        501,
+        "NOT_IMPLEMENTED",
+        "Route deferred to R2 (outside R1 Working Product).",
+        { method, path },
         traceId
       );
     }

@@ -35,7 +35,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, renderEmpty, scoreBadge, riskBadge, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, renderEmpty, scoreBadge, bindLogout, requireAuth, unwrapList } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/accounts/");
       bindLogout();
 
@@ -45,7 +46,7 @@
         const container = document.getElementById("accounts-table");
         try {
           const res = await apiGet("/v1/crm/organizations" + (q ? `?search=${encodeURIComponent(q)}` : ""));
-          let orgs = res?.data?.organizations ?? [];
+          let orgs = unwrapList(res, ["organizations"]);
           if (stage) orgs = orgs.filter(o => o.stage === stage);
           if (orgs.length === 0) {
             renderEmpty(container, "No accounts found.");

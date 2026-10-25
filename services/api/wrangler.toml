@@ -10,15 +10,17 @@ API_CONTRACT = "phase2-workers-v1"
 JWT_ISSUER = "cios.iai.one"
 JWT_AUDIENCE = "cios-workers-api"
 AUTH_DEMO_EMAIL = "admin@iai.one"
-# AUTH_DEMO_PASSWORD — optional wrangler secret (defaults to demo123456 in worker)
+# ALLOW_DEMO_SEED — set "true" only on staging; never on production
+# AUTH_DEMO_PASSWORD — wrangler secret (required when ALLOW_DEMO_SEED=true)
 # JWT_SECRET — set via: npx wrangler secret put JWT_SECRET
+# FLOW_WEBHOOK_SECRET — required; set via: npx wrangler secret put FLOW_WEBHOOK_SECRET
 
 [[d1_databases]]
 binding = "CIOS_DB"
 database_name = "cios-workers-api-db"
 database_id = "d4f3a44d-8f6e-4344-8679-749123c7aa33"
 
-# KV optional — uncomment after: npx wrangler kv namespace create CIOS_KV
+# Optional KV for token revocation denylist (D1 fallback exists without KV)
 # [[kv_namespaces]]
 # binding = "CIOS_KV"
 # id = "REPLACE_WITH_NEW_KV_ID"

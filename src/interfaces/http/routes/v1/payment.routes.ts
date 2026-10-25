@@ -15,7 +15,7 @@ const PLAN_PRICES: Record<string, { monthly: number; yearly: number }> = {
 
 export async function registerV1PaymentRoutes(app: FastifyInstance): Promise<void> {
   // GET /payment/plans — public
-  app.get("/payment/plans", async (request, reply) => {
+  app.get("/payment/plans", async (request, _reply) => {
     return envelopeOk(request, {
       plans: [
         { code: "free", name: "Free", monthlyUsd: 0, yearlyUsd: 0, companies: 100, signals: "basic", ai: false },
@@ -118,9 +118,10 @@ export async function registerV1PaymentRoutes(app: FastifyInstance): Promise<voi
   });
 
   // POST /payment/webhook — public (Stripe webhook)
-  app.post("/payment/webhook", async (request, reply) => {
+  app.post("/payment/webhook", async (request, _reply) => {
     // In MVP: accept the webhook and log it
-    const sig = request.headers["stripe-signature"] as string | undefined;
+    const _sig = request.headers["stripe-signature"] as string | undefined;
+    void _sig;
     const body = request.body as Record<string, unknown>;
 
     await recordAuthAudit({

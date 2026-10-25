@@ -1,5 +1,5 @@
 import { fail } from "./envelope";
-import type { WorkerEnv } from "./persistence";
+import { isTokenRevoked, type WorkerEnv } from "./persistence";
 
 export type Role = "observer" | "operator" | "governor" | "root";
 
@@ -135,6 +135,11 @@ export async function requireAuth(
   }
   if (!claimsContextValid(claims, env)) {
     return fail(401, "UNAUTHORIZED", "JWT issuer/audience mismatch.", undefined, traceId);
+  }
+
+  const jti = typeof claims.jti === "string" ? claims.jti : "";
+  if (jti && (await isTokenRevoked(env, jti))) {
+    return fail(401, "UNAUTHORIZED", "JWT has been revoked.", undefined, traceId);
   }
 
   const subject =

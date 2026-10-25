@@ -45,7 +45,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiPost, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiPost, bindLogout, requireAuth } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/import/");
       bindLogout();
 

@@ -40,16 +40,11 @@
             <button type="submit" class="cios-cta cios-cta-primary" style="width:100%;">Sign In</button>
           </form>
 
-          <div style="text-align:center;margin:1.5rem 0;">
-            <span style="color:var(--cios-muted);">or</span>
-          </div>
-
-          <a href="/v1/auth/google" class="cios-cta cios-cta-secondary" style="width:100%;display:block;text-align:center;text-decoration:none;">
-            Sign in with Google
-          </a>
-
           <p style="text-align:center;margin-top:1.5rem;color:var(--cios-muted);">
             Don't have an account? <a href="/register/">Register</a>
+          </p>
+          <p style="text-align:center;margin-top:0.75rem;color:var(--cios-muted);font-size:0.9rem;">
+            Google sign-in arrives in R2.
           </p>
           <p id="error-msg" style="color:#991b1b;text-align:center;margin-top:1rem;"></p>
         </section>
@@ -75,11 +70,6 @@
       const token = getToken();
       if (token) {
         window.location.href = "/app/";
-      }
-
-      const googleLink = document.querySelector('a[href="/v1/auth/google"]');
-      if (googleLink) {
-        googleLink.href = apiUrl("/v1/auth/google");
       }
 
       const form = document.getElementById("login-form");

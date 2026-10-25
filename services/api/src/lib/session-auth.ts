@@ -1,6 +1,10 @@
 import { fail, ok } from "./envelope";
 import { signHs256Jwt } from "./jwt-sign";
-import type { WorkerEnv } from "./persistence";
+import {
+  ensurePersistenceSchema,
+  revokeToken,
+  type WorkerEnv
+} from "./persistence";
 import { requireAuth } from "./auth";
 
 type MemberRecord = {
@@ -15,6 +19,7 @@ type MemberRecord = {
 
 type StoredUser = MemberRecord & {
   passwordHash: string;
+  passwordSalt: string;
 };
 
 const memoryUsers = new Map<string, StoredUser>();
@@ -22,11 +27,26 @@ const memoryUsers = new Map<string, StoredUser>();
 const DEMO_WORKSPACE = {
   workspaceId: "ws_demo",
   workspaceCode: "demo",
-  plan: "enterprise"
+  plan: "starter"
 };
+
+const REGISTER_ROLE = "sales_rep";
+const DEMO_ROLE = "sales_rep";
 
 function userKey(workspaceCode: string, email: string): string {
   return `${workspaceCode.toLowerCase()}:${email.toLowerCase()}`;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function randomSalt(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return bytesToHex(bytes);
 }
 
 async function hashPassword(password: string, salt: string): Promise<string> {
@@ -50,33 +70,9 @@ async function hashPassword(password: string, salt: string): Promise<string> {
   return bytesToHex(new Uint8Array(bits));
 }
 
-function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 async function verifyPassword(password: string, salt: string, expectedHash: string): Promise<boolean> {
   const actual = await hashPassword(password, salt);
   return actual === expectedHash;
-}
-
-async function seedDemoUser(env: WorkerEnv): Promise<void> {
-  const email = env.AUTH_DEMO_EMAIL ?? "admin@iai.one";
-  const password = env.AUTH_DEMO_PASSWORD ?? "demo123456";
-  const key = userKey(DEMO_WORKSPACE.workspaceCode, email);
-  if (memoryUsers.has(key)) return;
-  const salt = `cios-demo:${email}`;
-  memoryUsers.set(key, {
-    userId: "usr_demo_admin",
-    workspaceId: DEMO_WORKSPACE.workspaceId,
-    workspaceCode: DEMO_WORKSPACE.workspaceCode,
-    email,
-    displayName: "CIOS Demo Admin",
-    role: "admin",
-    plan: DEMO_WORKSPACE.plan,
-    passwordHash: await hashPassword(password, salt)
-  });
 }
 
 function toPublicMember(user: StoredUser): MemberRecord {
@@ -101,6 +97,110 @@ function readString(record: Record<string, unknown>, key: string): string | null
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+function demoSeedAllowed(env: WorkerEnv): boolean {
+  return String(env.ALLOW_DEMO_SEED ?? "").toLowerCase() === "true";
+}
+
+async function getUser(env: WorkerEnv, key: string): Promise<StoredUser | null> {
+  if (env.CIOS_DB) {
+    await ensurePersistenceSchema(env);
+    const row = await env.CIOS_DB.prepare(
+      `
+      SELECT user_id, workspace_id, workspace_code, email, display_name, role, plan,
+             password_hash, password_salt
+      FROM api_users WHERE user_key = ? LIMIT 1
+      `
+    )
+      .bind(key)
+      .first<{
+        user_id: string;
+        workspace_id: string;
+        workspace_code: string;
+        email: string;
+        display_name: string;
+        role: string;
+        plan: string;
+        password_hash: string;
+        password_salt: string;
+      }>();
+    if (!row) return null;
+    return {
+      userId: row.user_id,
+      workspaceId: row.workspace_id,
+      workspaceCode: row.workspace_code,
+      email: row.email,
+      displayName: row.display_name,
+      role: row.role,
+      plan: row.plan,
+      passwordHash: row.password_hash,
+      passwordSalt: row.password_salt
+    };
+  }
+  return memoryUsers.get(key) ?? null;
+}
+
+async function putUser(env: WorkerEnv, key: string, user: StoredUser): Promise<void> {
+  const now = new Date().toISOString();
+  if (env.CIOS_DB) {
+    await ensurePersistenceSchema(env);
+    await env.CIOS_DB.prepare(
+      `
+      INSERT INTO api_users (
+        user_key, user_id, workspace_id, workspace_code, email, display_name,
+        role, plan, password_hash, password_salt, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_key) DO UPDATE SET
+        display_name = excluded.display_name,
+        role = excluded.role,
+        plan = excluded.plan,
+        password_hash = excluded.password_hash,
+        password_salt = excluded.password_salt,
+        updated_at = excluded.updated_at
+      `
+    )
+      .bind(
+        key,
+        user.userId,
+        user.workspaceId,
+        user.workspaceCode,
+        user.email,
+        user.displayName,
+        user.role,
+        user.plan,
+        user.passwordHash,
+        user.passwordSalt,
+        now,
+        now
+      )
+      .run();
+    return;
+  }
+  memoryUsers.set(key, user);
+}
+
+async function seedDemoUser(env: WorkerEnv): Promise<void> {
+  if (!demoSeedAllowed(env)) return;
+  if (!env.AUTH_DEMO_PASSWORD) return;
+
+  const email = env.AUTH_DEMO_EMAIL ?? "admin@iai.one";
+  const key = userKey(DEMO_WORKSPACE.workspaceCode, email);
+  const existing = await getUser(env, key);
+  if (existing) return;
+
+  const salt = randomSalt();
+  await putUser(env, key, {
+    userId: "usr_demo_operator",
+    workspaceId: DEMO_WORKSPACE.workspaceId,
+    workspaceCode: DEMO_WORKSPACE.workspaceCode,
+    email,
+    displayName: "CIOS Demo Operator",
+    role: DEMO_ROLE,
+    plan: DEMO_WORKSPACE.plan,
+    passwordHash: await hashPassword(env.AUTH_DEMO_PASSWORD, salt),
+    passwordSalt: salt
+  });
+}
+
 export async function handleAuthRegister(
   request: Request,
   env: WorkerEnv,
@@ -115,33 +215,38 @@ export async function handleAuthRegister(
 
   const email = readString(body, "email");
   const password = readString(body, "password");
-  const workspaceCode = readString(body, "workspaceCode") ?? DEMO_WORKSPACE.workspaceCode;
+  // R1: open register cannot pick an arbitrary tenant (blocks workspace join).
+  // Client-supplied workspaceCode is ignored; always land in the demo workspace.
+  const workspaceCode = DEMO_WORKSPACE.workspaceCode;
   const displayName = readString(body, "displayName") ?? "Member";
-  const role = readString(body, "role") ?? "sales_rep";
+  // Server-assigned only — ignore client-supplied role (R1)
+  const role = REGISTER_ROLE;
 
   if (!email || !password || password.length < 8) {
     return fail(400, "VALIDATION_FAILED", "Email and password (min 8 chars) are required.", undefined, traceId);
   }
 
   const key = userKey(workspaceCode, email);
-  if (memoryUsers.has(key)) {
-    return fail(409, "AUTH_EMAIL_EXISTS", "Email already exists in workspace.", { workspaceCode, email }, traceId);
+  if (await getUser(env, key)) {
+    return fail(409, "AUTH_EMAIL_EXISTS", "Email already registered.", undefined, traceId);
   }
 
   const userId = `usr_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-  const salt = `cios:${workspaceCode}:${email}`;
-  memoryUsers.set(key, {
+  const salt = randomSalt();
+  const user: StoredUser = {
     userId,
-    workspaceId: workspaceCode === DEMO_WORKSPACE.workspaceCode ? DEMO_WORKSPACE.workspaceId : `ws_${workspaceCode}`,
+    workspaceId: DEMO_WORKSPACE.workspaceId,
     workspaceCode,
     email,
     displayName,
     role,
-    plan: workspaceCode === DEMO_WORKSPACE.workspaceCode ? DEMO_WORKSPACE.plan : "starter",
-    passwordHash: await hashPassword(password, salt)
-  });
+    plan: DEMO_WORKSPACE.plan,
+    passwordHash: await hashPassword(password, salt),
+    passwordSalt: salt
+  };
+  await putUser(env, key, user);
 
-  return ok({ member: toPublicMember(memoryUsers.get(key)!) }, { route: "/v1/auth/register" }, traceId);
+  return ok({ member: toPublicMember(user) }, { route: "/v1/auth/register" }, traceId);
 }
 
 export async function handleAuthSession(
@@ -168,17 +273,10 @@ export async function handleAuthSession(
   }
 
   const key = userKey(workspaceCode, email);
-  const user = memoryUsers.get(key);
-  if (!user) {
-    return fail(401, "AUTH_INVALID_CREDENTIALS", "Invalid credentials.", { reason: "user_not_found" }, traceId);
-  }
-
-  const salt = user.email === (env.AUTH_DEMO_EMAIL ?? "admin@iai.one")
-    ? `cios-demo:${user.email}`
-    : `cios:${workspaceCode}:${email}`;
-  const valid = await verifyPassword(password, salt, user.passwordHash);
-  if (!valid) {
-    return fail(401, "AUTH_INVALID_CREDENTIALS", "Invalid credentials.", { reason: "password_mismatch" }, traceId);
+  const user = await getUser(env, key);
+  // Same message/body whether missing user or bad password (no enumeration).
+  if (!user || !(await verifyPassword(password, user.passwordSalt, user.passwordHash))) {
+    return fail(401, "AUTH_INVALID_CREDENTIALS", "Invalid credentials.", undefined, traceId);
   }
 
   const member = toPublicMember(user);
@@ -230,6 +328,17 @@ export async function handleAuthLogout(
 ): Promise<Response> {
   const auth = await requireAuth(request, traceId, env);
   if (auth instanceof Response) return auth;
+
+  const jti = typeof auth.claims.jti === "string" ? auth.claims.jti : null;
+  const exp = typeof auth.claims.exp === "number" ? auth.claims.exp : null;
+  if (jti && exp) {
+    await revokeToken(env, {
+      jti,
+      userId: auth.subject,
+      expiresAtMs: exp * 1000
+    });
+  }
+
   return ok({ logged_out: true }, { route: "/v1/auth/logout", subject: auth.subject }, traceId);
 }
 
@@ -239,7 +348,7 @@ export async function handleMeta(env: WorkerEnv, traceId: string): Promise<Respo
       service: "cios-workers-api",
       release: {
         name: "cios-workers-api",
-        version: "0.2.0",
+        version: "0.3.0",
         apiCompat: "v1",
         environment: "workers",
         contract: env.API_CONTRACT ?? "phase2-workers-v1"
@@ -248,7 +357,11 @@ export async function handleMeta(env: WorkerEnv, traceId: string): Promise<Respo
         auth: true,
         system: true,
         flow: true,
-        events: true
+        events: true,
+        crm: true,
+        discovery: true,
+        bootstrap: true,
+        overview: true
       }
     },
     { route: "/v1/meta" },

@@ -12,32 +12,34 @@ Enterprise intelligence product under the IAI ecosystem. Canonical API is Cloudf
 
 ---
 
-## Live stack (2026-07-10)
+## Live stack
 
 | Layer | Technology | URL |
 |-------|------------|-----|
 | Frontend | Cloudflare Pages (`site/`) | `https://cios.iai.one` |
-| API (canonical) | Cloudflare Workers | `https://cios-workers-api.tranhatam.workers.dev` |
+| API (canonical) | Cloudflare Workers + D1 | `https://cios-workers-api.tranhatam.workers.dev` |
 | Auth | JWT via Workers `/v1/auth/*` | See path lock in `STATUS.md` |
-| AIAgent | `api.aiagent.iai.one` | `POST /v1/agent/chat` |
+| AIAgent | `api.aiagent.iai.one` | R2 backlog |
 
-**Không dùng:** `cios-api.fly.dev` (DNS dead), `api.cios.iai.one` (chưa canonical).
+**Không dùng:** `cios-api.fly.dev` (DNS dead), Fly Fastify cho R1.  
+**Verdict:** xem `STATUS.md` (HOLD tới Founder GO trên handoff `*.iai.one`).
 
 ---
 
 ## Quick start (dev)
 
 ```bash
-pnpm install
+npm ci
 cp .env.example .env
-pnpm dev
+npm run typecheck && npm test
+cd services/api && npm ci && npm run typecheck
 ```
 
 ## Deploy + smoke
 
+- Không deploy production cho đến Founder GO trên `IAI_ONE_MASTER_HANDOFF…`
+- `npm run smoke:workers:readonly` (CI-safe)
 - `docs/API_BACKEND_DEBUG_RUNBOOK.md`
-- `npm run smoke:workers`
-- `npm run smoke:workers:strict`
 
 ## Structure
 
