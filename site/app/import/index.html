@@ -21,82 +21,21 @@
       </header>
       <main class="cios-app-main" id="main">
         <h1 class="cios-page-title">Import</h1>
-
         <section class="cios-story-block">
-          <h2>Upload CSV</h2>
-          <p>Required columns: <code>name, domain, industry, country, notes</code></p>
-          <input id="csv-file" type="file" accept=".csv" />
-          <button id="upload-btn" class="cios-btn cios-btn-primary" style="margin-top:0.5rem;">Upload &amp; Import</button>
-          <pre id="import-result" style="margin-top:1rem;background:#f3f4f6;padding:1rem;border-radius:0.5rem;font-size:0.85rem;"></pre>
-        </section>
-
-        <section class="cios-story-block">
-          <h2>Manual Add</h2>
-          <div style="display:flex;flex-direction:column;gap:0.5rem;max-width:400px;">
-            <input id="m-name" type="text" placeholder="Company name" />
-            <input id="m-domain" type="text" placeholder="Domain" />
-            <input id="m-industry" type="text" placeholder="Industry" />
-            <input id="m-country" type="text" placeholder="Country" />
-            <textarea id="m-notes" placeholder="Notes" rows="3"></textarea>
-            <button id="add-btn" class="cios-btn cios-btn-primary">Add Company</button>
-          </div>
-          <pre id="add-result" style="margin-top:1rem;background:#f3f4f6;padding:1rem;border-radius:0.5rem;font-size:0.85rem;"></pre>
+          <h2>Coming in R2</h2>
+          <p>
+            CSV import and manual create write paths are deferred outside R1 Working Product.
+            R1 ships authenticated <strong>read</strong> surfaces for accounts, signals, priorities, and audit.
+          </p>
+          <p><a class="cios-btn cios-btn-primary" href="/app/accounts/">Browse accounts</a></p>
         </section>
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiPost, bindLogout, requireAuth } from "/js/app-shell.js";
+      import { renderSidebar, bindLogout, requireAuth } from "/js/app-shell.js";
       requireAuth();
       renderSidebar("/app/import/");
       bindLogout();
-
-      document.getElementById("upload-btn").addEventListener("click", async () => {
-        const file = document.getElementById("csv-file").files[0];
-        const out = document.getElementById("import-result");
-        if (!file) { out.textContent = "Select a CSV file first."; return; }
-        const text = await file.text();
-        const lines = text.split(/\r?\n/).filter(l => l.trim());
-        if (lines.length < 2) { out.textContent = "CSV is empty or missing headers."; return; }
-        // Simple CSV parse (no quotes handling for MVP)
-        const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-        const rows = lines.slice(1).map(line => {
-          const vals = line.split(",").map(v => v.trim());
-          const obj = {};
-          headers.forEach((h, i) => obj[h] = vals[i] || "");
-          return obj;
-        });
-        const payload = rows.map(r => ({
-          name: r.name || r.company || "",
-          domain: r.domain || "",
-          industry: r.industry || "",
-          country: r.country || "",
-          notes: r.notes || ""
-        })).filter(r => r.name);
-        try {
-          const res = await apiPost("/v1/crm/organizations/import", payload);
-          out.textContent = JSON.stringify(res, null, 2);
-        } catch (e) {
-          out.textContent = "Import failed: " + e.message;
-        }
-      });
-
-      document.getElementById("add-btn").addEventListener("click", async () => {
-        const out = document.getElementById("add-result");
-        const payload = {
-          name: document.getElementById("m-name").value,
-          domain: document.getElementById("m-domain").value,
-          industry: document.getElementById("m-industry").value,
-          country: document.getElementById("m-country").value,
-          notes: document.getElementById("m-notes").value,
-        };
-        if (!payload.name) { out.textContent = "Name is required."; return; }
-        try {
-          const res = await apiPost("/v1/crm/organizations", payload);
-          out.textContent = JSON.stringify(res, null, 2);
-        } catch (e) {
-          out.textContent = "Add failed: " + e.message;
-        }
-      });
     </script>
   </body>
 </html>

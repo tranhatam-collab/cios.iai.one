@@ -37,23 +37,14 @@
               <label>Password</label>
               <input id="password" type="password" required minlength="8" placeholder="Min 8 characters" style="width:100%;padding:0.6rem;border-radius:0.4rem;border:1px solid var(--cios-border);" />
             </div>
-            <div>
-              <label>Workspace</label>
-              <input id="workspace" type="text" value="demo" required style="width:100%;padding:0.6rem;border-radius:0.4rem;border:1px solid var(--cios-border);" />
-            </div>
             <button type="submit" class="cios-cta cios-cta-primary" style="width:100%;">Create Account</button>
           </form>
 
-          <div style="text-align:center;margin:1.5rem 0;">
-            <span style="color:var(--cios-muted);">or</span>
-          </div>
-
-          <a href="/v1/auth/google" class="cios-cta cios-cta-secondary" style="width:100%;display:block;text-align:center;text-decoration:none;">
-            Sign up with Google
-          </a>
-
           <p style="text-align:center;margin-top:1.5rem;color:var(--cios-muted);">
             Already have an account? <a href="/login/">Sign in</a>
+          </p>
+          <p style="text-align:center;margin-top:0.75rem;color:var(--cios-muted);font-size:0.9rem;">
+            Google sign-up arrives in R2. Open register lands in the demo workspace only.
           </p>
           <p id="error-msg" style="color:#991b1b;text-align:center;margin-top:1rem;"></p>
           <p id="success-msg" style="color:#166534;text-align:center;margin-top:1rem;"></p>
@@ -72,18 +63,12 @@
     <script type="module">
       import {
         apiPost,
-        apiUrl,
         getToken
       } from "/js/api-client.js";
 
       const token = getToken();
       if (token) {
         window.location.href = "/app/";
-      }
-
-      const googleLink = document.querySelector('a[href="/v1/auth/google"]');
-      if (googleLink) {
-        googleLink.href = apiUrl("/v1/auth/google");
       }
 
       const form = document.getElementById("register-form");
@@ -98,14 +83,12 @@
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
         const displayName = document.getElementById("name").value;
-        const workspaceCode = document.getElementById("workspace").value;
 
         try {
           await apiPost("/v1/auth/register", {
             email,
             password,
-            displayName,
-            workspaceCode
+            displayName
           });
 
           successMsg.textContent = "Account created! Redirecting to login...";

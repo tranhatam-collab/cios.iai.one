@@ -3,7 +3,8 @@
 **Surface:** `cios.iai.one`  
 **Role:** Enterprise intelligence product  
 **Updated:** 2026-10-25  
-**Verdict:** HOLD — R1 candidate code complete; chờ Founder GO trên handoff `*.iai.one` trước deploy
+**Verdict:** HOLD — R1 candidate on PR; chờ Founder GO trên handoff `*.iai.one` trước deploy  
+**RC branch:** `remediation/r1-working-product` — https://github.com/tranhatam-collab/cios.iai.one/pull/1 (`build-test` xanh)
 
 ## Canonical API
 
@@ -39,8 +40,14 @@ Không công bố mật khẩu production trong STATUS. Role register do server 
 
 Production Pages/Workers: account `f3f9…` (domain `cios.iai.one`). CI dùng `secrets.CLOUDFLARE_ACCOUNT_ID` — không hard-code account khác.
 
+## Secrets / bindings (ops)
+
+- Required Worker secrets: `JWT_SECRET`, `FLOW_WEBHOOK_SECRET` (`wrangler secret put`)
+- Optional: `CIOS_KV` (D1 revoke fallback OK); `ALLOW_DEMO_SEED` + `AUTH_DEMO_PASSWORD` staging only
+- GitHub: `CLOUDFLARE_ACCOUNT_ID` = account `f3f9…`; staging `SMOKE_WORKERS_API_URL` + `SMOKE_WORKERS_JWT_SECRET`
+
 ## Open
 
-- [ ] Founder GO trên `docs/ops/status/IAI_ONE_MASTER_HANDOFF_AND_DEV_PLAN_2026-10-16.md` trước deploy R1
-- [ ] Staging smoke secrets: `SMOKE_WORKERS_API_URL`, `SMOKE_WORKERS_JWT_SECRET`
+- [ ] Founder GO trên workspace handoff `docs/ops/status/IAI_ONE_MASTER_HANDOFF_AND_DEV_PLAN_2026-10-16.md` trước deploy R1
+- [ ] Confirm staging smoke secrets in GitHub Actions
 - [ ] Verify AIAgent với `AIAGENT_API_KEY` (R2)
