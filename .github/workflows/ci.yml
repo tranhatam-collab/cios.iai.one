@@ -92,7 +92,7 @@ jobs:
 
       - name: Install Workers dependencies
         working-directory: services/api
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Deploy Workers API
         working-directory: services/api

@@ -2,9 +2,12 @@
 
 **Surface:** `cios.iai.one`  
 **Role:** Enterprise intelligence product  
-**Updated:** 2026-10-25  
-**Verdict:** HOLD — R1 candidate on PR; chờ Founder GO trên handoff `*.iai.one` trước deploy  
-**RC branch:** `remediation/r1-working-product` — https://github.com/tranhatam-collab/cios.iai.one/pull/1 (`build-test` xanh)
+**Updated:** 2026-10-26  
+**Verdict:** R1 **LIVE** on Workers+Pages (account `f3f9…`); ecosystem handoff still not whole-system `GO`
+
+**RC:** `main@80edde1` (merge PR #1) + local follow-up CD fix  
+**Worker version:** `62f8ff79-9a90-455b-8c25-cae81a2f3476`  
+**Pages deployment:** `https://999add6d.cios-iai-one-3ai.pages.dev` → `https://cios.iai.one`
 
 ## Canonical API
 
@@ -22,32 +25,32 @@
 
 ## Integrations
 
-- AIAgent: `https://api.aiagent.iai.one` → `POST /v1/agent/chat` (Fastify path; Workers chưa expose)
+- AIAgent: `https://api.aiagent.iai.one` → R2 backlog on Workers
 - Frontend: `site/js/api-client.js` → Workers
 
 ## Demo / auth
 
 Demo seed **tắt** trên production trừ khi `ALLOW_DEMO_SEED=true` **và** secret `AUTH_DEMO_PASSWORD` được set.  
-Không công bố mật khẩu production trong STATUS. Role register do server gán (`sales_rep`).
+Không công bố mật khẩu production trong STATUS. Role register do server gán (`sales_rep`); open register luôn workspace `demo`.
 
-## R1 surface (Workers + D1)
+## R1 surface (Workers + D1) — LIVE
 
-- Auth: register role server-assigned; demo seed gated; JWT `jti` revoke; CORS allowlist
+- Auth: register role server-assigned; demo seed gated; JWT `jti` revoke; CORS allowlist; `FLOW_WEBHOOK_SECRET` set
 - Product reads: `/v1/bootstrap`, `/v1/overview`, `/v1/crm/organizations`, `/v1/discovery/*`, `/v1/compliance/audit`, `/v1/review/queue`
 - Ngoài R1: Stripe/payment, Google OAuth, SSE, CRM write/import/enrich
 
 ## Cloudflare account lock
 
-Production Pages/Workers: account `f3f9…` (domain `cios.iai.one`). CI dùng `secrets.CLOUDFLARE_ACCOUNT_ID` — không hard-code account khác.
+Production Pages/Workers: account `f3f9e76222dcb488d5e303e29e8ba192` (domain `cios.iai.one`).  
+GitHub Actions: `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` + `SMOKE_WORKERS_API_URL`.
 
 ## Secrets / bindings (ops)
 
 - Required Worker secrets: `JWT_SECRET`, `FLOW_WEBHOOK_SECRET` (`wrangler secret put`)
 - Optional: `CIOS_KV` (D1 revoke fallback OK); `ALLOW_DEMO_SEED` + `AUTH_DEMO_PASSWORD` staging only
-- GitHub: `CLOUDFLARE_ACCOUNT_ID` = account `f3f9…`; staging `SMOKE_WORKERS_API_URL` + `SMOKE_WORKERS_JWT_SECRET`
 
-## Open
+## Open / R2
 
-- [ ] Founder GO trên workspace handoff `docs/ops/status/IAI_ONE_MASTER_HANDOFF_AND_DEV_PLAN_2026-10-16.md` trước deploy R1
-- [ ] Confirm staging smoke secrets in GitHub Actions
+- [ ] Harden CI Workers `npm ci` peer deps (`--legacy-peer-deps` patch)
 - [ ] Verify AIAgent với `AIAGENT_API_KEY` (R2)
+- [ ] Stripe / Google OAuth / SSE (R2)
