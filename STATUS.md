@@ -3,11 +3,11 @@
 **Surface:** `cios.iai.one`  
 **Role:** Enterprise intelligence product  
 **Updated:** 2026-10-26  
-**Verdict:** R1 **LIVE** on Workers+Pages (account `f3f9…`); ecosystem handoff still not whole-system `GO`
+**Verdict:** R1 **LIVE** on Workers+Pages (account `f3f9…`); CI+CD xanh trên `main`; ecosystem handoff still not whole-system `GO`
 
-**RC:** `main@80edde1` (merge PR #1) + local follow-up CD fix  
-**Worker version:** `62f8ff79-9a90-455b-8c25-cae81a2f3476`  
-**Pages deployment:** `https://999add6d.cios-iai-one-3ai.pages.dev` → `https://cios.iai.one`
+**RC:** `main@e066838` (CI/CD green run [40338919524](https://github.com/tranhatam-collab/cios.iai.one/actions/runs/40338919524))  
+**Worker version:** `b9fbd314-38b2-496b-9ade-0d8998a45098`  
+**Pages deployment:** `https://400e9d36.cios-iai-one-3ai.pages.dev` → `https://cios.iai.one`
 
 ## Canonical API
 
@@ -49,8 +49,17 @@ GitHub Actions: `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` + `SMOKE_WORKER
 - Required Worker secrets: `JWT_SECRET`, `FLOW_WEBHOOK_SECRET` (`wrangler secret put`)
 - Optional: `CIOS_KV` (D1 revoke fallback OK); `ALLOW_DEMO_SEED` + `AUTH_DEMO_PASSWORD` staging only
 
+## CI / CD (main)
+
+- Triggers: `push` + `workflow_dispatch`
+- Jobs: `build-test` → `Smoke Workers Readonly` → parallel `Deploy Cloudflare Workers API` + `Deploy Cloudflare Pages`
+- Receipt `e066838` / run `40338919524`: all four jobs **success** (2026-10-26)
+- Post-deploy live: `/health` + `/v1/system/health` 200; product reads 401 without JWT; `POST /v1/auth/session` validates; homepage honesty OK
+
 ## Open / R2
 
-- [ ] Harden CI Workers `npm ci` peer deps (`--legacy-peer-deps` patch)
+- [x] Harden CI Workers `npm ci` peer deps (`--legacy-peer-deps`)
+- [x] Pages deploy independent of Workers job; `workflow_dispatch` chạy smoke+CD
+- [ ] Prefer durable Cloudflare **API token** for GitHub (OAuth token can expire)
 - [ ] Verify AIAgent với `AIAGENT_API_KEY` (R2)
 - [ ] Stripe / Google OAuth / SSE (R2)
