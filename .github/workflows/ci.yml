@@ -55,7 +55,9 @@ jobs:
   smoke-workers-readonly:
     name: Smoke Workers Readonly
     needs: build-test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: >
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -78,7 +80,9 @@ jobs:
   deploy-workers:
     name: Deploy Cloudflare Workers API
     needs: [build-test, smoke-workers-readonly]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: >
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -109,7 +113,9 @@ jobs:
   deploy-pages:
     name: Deploy Cloudflare Pages
     needs: [build-test, smoke-workers-readonly]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    if: >
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:
       contents: read
