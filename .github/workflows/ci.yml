@@ -27,22 +27,33 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ci
+          JWT_SECRET: ci-jwt-secret-at-least-32-chars
+          SESSION_SECRET: ci-session-secret-at-least-32
+          AIAGENT_API_URL: https://api.aiagent.iai.one
+          FRONTEND_URL: https://cios.iai.one
 
       - name: Build
         run: npm run build
+
+      - name: Lint
+        run: npm run lint
 
       - name: Test
         run: npm test
         env:
           NODE_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/ci
-          JWT_SECRET: ci-jwt-secret
-          SESSION_SECRET: ci-session-secret
+          JWT_SECRET: ci-jwt-secret-at-least-32-chars
+          SESSION_SECRET: ci-session-secret-at-least-32
           FLOW_WEBHOOK_SECRET: ci-flow-webhook-secret
+          AIAGENT_API_URL: https://api.aiagent.iai.one
+          FRONTEND_URL: https://cios.iai.one
           LOG_LEVEL: silent
 
-  smoke-workers-strict:
-    name: Smoke Workers Strict
+  smoke-workers-readonly:
+    name: Smoke Workers Readonly
     needs: build-test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
@@ -59,15 +70,45 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Smoke workers strict
-        run: npm run smoke:workers:strict
+      - name: Smoke workers (read-only)
+        run: npm run smoke:workers:readonly
         env:
-          JWT_SECRET: ${{ secrets.SMOKE_WORKERS_JWT_SECRET }}
           WORKERS_API_URL: ${{ secrets.SMOKE_WORKERS_API_URL }}
+
+  deploy-workers:
+    name: Deploy Cloudflare Workers API
+    needs: [build-test, smoke-workers-readonly]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Workers dependencies
+        working-directory: services/api
+        run: npm ci
+
+      - name: Deploy Workers API
+        working-directory: services/api
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Post-deploy Workers health
+        run: |
+          curl -fsS --retry 5 --retry-delay 3 \
+            "https://cios-workers-api.tranhatam.workers.dev/v1/system/health" | grep -q '"status":"healthy"'
 
   deploy-pages:
     name: Deploy Cloudflare Pages
-    needs: [build-test, smoke-workers-strict]
+    needs: [build-test, smoke-workers-readonly, deploy-workers]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:
@@ -92,21 +133,29 @@ jobs:
             echo "::error::CLOUDFLARE_API_TOKEN is empty after trim. Add the API token under Settings → Secrets → Actions."
             exit 1
           fi
+          ACCOUNT_ID="$(python3 -c "import os; print(os.environ['CLOUDFLARE_ACCOUNT_ID'].strip())")"
+          if [ -z "$ACCOUNT_ID" ]; then
+            echo "::error::CLOUDFLARE_ACCOUNT_ID is empty. Set secrets.CLOUDFLARE_ACCOUNT_ID to f3f9… account."
+            exit 1
+          fi
           code=$(curl -sS -o /dev/null -w "%{http_code}" \
-            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/cios-iai-one" \
+            "https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/pages/projects/cios-iai-one" \
             -H "Authorization: Bearer ${TOKEN}")
           if [ "$code" != "200" ]; then
-            echo "::error::Cloudflare API returned HTTP ${code} for Pages project lookup."
+            echo "::error::Cloudflare API returned HTTP ${code} for Pages project lookup on account ${ACCOUNT_ID}."
             echo "Use an API Token with Account → Cloudflare Pages → Edit on this account; not the Global API Key."
             exit 1
           fi
           export CLOUDFLARE_API_TOKEN="$TOKEN"
+          export CLOUDFLARE_ACCOUNT_ID="$ACCOUNT_ID"
           npx --yes wrangler@4 pages deploy site --project-name=cios-iai-one
         env:
-          CLOUDFLARE_ACCOUNT_ID: 93112cc89181e75335cbd7ef7e392ba3
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
       - name: Smoke test (production Pages URL)
         run: |
           curl -fsS --retry 5 --retry-delay 4 --retry-all-errors \
-            "https://cios-iai-one.pages.dev/" | grep -q "Hệ điều hành tìm kiếm khách hàng tự động"
+            "https://cios.iai.one/" | grep -q "Hệ điều hành trí tuệ khách hàng"
+          curl -fsS --retry 5 --retry-delay 2 \
+            "https://cios.iai.one/" | grep -qv "Day 7 Product Front"

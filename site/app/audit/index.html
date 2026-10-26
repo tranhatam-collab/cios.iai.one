@@ -25,7 +25,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout, requireAuth, unwrapList } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/audit/");
       bindLogout();
 
@@ -33,7 +34,7 @@
         const container = document.getElementById("audit-table");
         try {
           const res = await apiGet("/v1/compliance/audit");
-          const logs = res?.data?.audit ?? [];
+          const logs = unwrapList(res, ["audit", "entries"]);
           if (logs.length === 0) {
             renderEmpty(container, "No audit events yet.");
             return;

@@ -18,6 +18,15 @@ async function hmacHex(payload: string, secret: string): Promise<string> {
   return toHex(new Uint8Array(digest));
 }
 
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
 export async function verifyFlowSignature(
   body: unknown,
   request: Request,
@@ -25,7 +34,13 @@ export async function verifyFlowSignature(
   secret?: string
 ): Promise<true | Response> {
   if (!secret) {
-    return true;
+    return fail(
+      500,
+      "CONFIG_ERROR",
+      "FLOW_WEBHOOK_SECRET is not configured.",
+      undefined,
+      traceId
+    );
   }
   const provided = request.headers.get("x-flow-signature");
   if (!provided) {
@@ -33,7 +48,7 @@ export async function verifyFlowSignature(
   }
   const payload = JSON.stringify(body ?? {});
   const expected = await hmacHex(payload, secret);
-  if (provided !== expected) {
+  if (!timingSafeEqualHex(provided.toLowerCase(), expected.toLowerCase())) {
     return fail(401, "UNAUTHORIZED", "Invalid flow callback signature.", undefined, traceId);
   }
   return true;

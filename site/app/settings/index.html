@@ -55,42 +55,10 @@
       const subInfo = document.getElementById("subscription-info");
       const plansList = document.getElementById("plans-list");
 
-      async function loadSubscription() {
-        try {
-          const res = await apiGet("/v1/payment/subscription");
-          const sub = res?.data;
-          subInfo.innerHTML = `<p><strong>Current Plan:</strong> ${sub.plan}</p><p><strong>Status:</strong> ${sub.status}</p>`;
-        } catch {
-          subInfo.innerHTML = `<p>Could not load subscription.</p>`;
-        }
-      }
-
-      async function loadPlans() {
-        try {
-          const res = await apiGet("/v1/payment/plans");
-          const plans = res?.data?.plans || [];
-          plansList.innerHTML = `<div class="cios-grid cios-grid-2">` +
-            plans.filter(p => !p.contactSales).map(p =>
-              `<article class="cios-card"><h3>${p.name}</h3><p>$${p.monthlyUsd}/mo</p><p>${p.companies} companies</p><button class="cios-btn cios-btn-primary" data-plan="${p.code}">Select</button></article>`
-            ).join("") + `</div>`;
-          plansList.querySelectorAll("button[data-plan]").forEach(btn => {
-            btn.addEventListener("click", async () => {
-              try {
-                const r = await apiPost("/v1/payment/checkout", { plan: btn.dataset.plan, billingCycle: "monthly" });
-                payOut.textContent = `Checkout initiated: ${JSON.stringify(r.data, null, 2)}`;
-                await loadSubscription();
-              } catch (e) {
-                payOut.textContent = `Checkout failed: ${e.message}`;
-              }
-            });
-          });
-        } catch {
-          plansList.innerHTML = `<p>Could not load plans.</p>`;
-        }
-      }
-
-      loadSubscription();
-      loadPlans();
+      // Payment / Stripe is R2 — outside R1 Working Product scope.
+      subInfo.innerHTML = `<p>Billing is not enabled in R1. Contact support for plan changes.</p>`;
+      plansList.innerHTML = `<p class="cios-muted">Stripe checkout arrives in R2.</p>`;
+      if (payOut) payOut.textContent = "";
 
       document.getElementById("export-btn").addEventListener("click", () => {
         out.textContent = "Export request submitted. You will receive an email when ready.";

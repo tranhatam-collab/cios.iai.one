@@ -53,11 +53,11 @@
         renderSidebar,
         apiGet,
         renderEmpty,
-        formatDate,
         scoreBadge,
         riskBadge,
         bindLogout,
         requireAuth,
+        unwrapList,
       } from "/js/app-shell.js";
 
       requireAuth();
@@ -72,7 +72,7 @@
 
         try {
           const orgsRes = await apiGet("/v1/crm/organizations");
-          const orgs = orgsRes?.data?.organizations ?? [];
+          const orgs = unwrapList(orgsRes, ["organizations"]);
           if (orgs.length === 0) {
             renderEmpty(accountsEl, "No accounts yet. Import or add companies.");
           } else {
@@ -87,7 +87,7 @@
 
         try {
           const sigRes = await apiGet("/v1/discovery/sources");
-          const sigs = sigRes?.data?.queue ?? [];
+          const sigs = unwrapList(sigRes, ["queue", "sources"]);
           if (sigs.length === 0) {
             renderEmpty(signalsEl, "No signals yet.");
           } else {
@@ -101,7 +101,7 @@
         }
 
         try {
-          const sigs = (await apiGet("/v1/discovery/sources"))?.data?.queue ?? [];
+          const sigs = unwrapList(await apiGet("/v1/discovery/sources"), ["queue", "sources"]);
           const risks = sigs.filter(s => s.riskLevel && s.riskLevel.toLowerCase() !== "low");
           if (risks.length === 0) {
             renderEmpty(riskEl, "No risk warnings.");
@@ -116,7 +116,7 @@
         }
 
         try {
-          const orgs = (await apiGet("/v1/crm/organizations"))?.data?.organizations ?? [];
+          const orgs = unwrapList(await apiGet("/v1/crm/organizations"), ["organizations"]);
           const prioritized = orgs
             .filter(o => o.fitScore >= 60)
             .sort((a, b) => b.fitScore - a.fitScore)

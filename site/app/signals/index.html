@@ -25,7 +25,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout, requireAuth, unwrapList } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/signals/");
       bindLogout();
 
@@ -33,7 +34,7 @@
         const container = document.getElementById("signals-table");
         try {
           const res = await apiGet("/v1/discovery/sources");
-          const sigs = res?.data?.queue ?? [];
+          const sigs = unwrapList(res, ["queue", "sources"]);
           if (sigs.length === 0) {
             renderEmpty(container, "No signals yet. Import companies or wait for detection.");
             return;

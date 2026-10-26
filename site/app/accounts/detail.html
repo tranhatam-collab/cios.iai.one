@@ -25,7 +25,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, apiPost, renderEmpty, scoreBadge, riskBadge, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, renderEmpty, scoreBadge, bindLogout, requireAuth } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/accounts/");
       bindLogout();
 
@@ -65,87 +66,9 @@
             </section>
             <section class="cios-story-block">
               <h2>AI Insights</h2>
-              <p>Click to run AI analysis for this account.</p>
-              <button id="enrich-btn" class="cios-btn cios-btn-primary">Run AI Enrichment</button>
-              <div id="ai-insights" style="margin-top:1rem;"></div>
-            </section>
-            <section class="cios-story-block">
-              <h2>Website Analysis</h2>
-              <textarea id="website-text" rows="4" placeholder="Paste website text here..." style="width:100%;padding:0.5rem;border-radius:0.4rem;border:1px solid var(--cios-border);"></textarea>
-              <button id="analyze-btn" class="cios-btn cios-btn-primary" style="margin-top:0.5rem;">Analyze with AI</button>
-              <div id="website-analysis" style="margin-top:1rem;"></div>
+              <p>AI enrichment and website analysis ship in R2. R1 shows account read data only.</p>
             </section>
           `;
-
-          document.getElementById("enrich-btn").addEventListener("click", async () => {
-            const out = document.getElementById("ai-insights");
-            out.innerHTML = "<p>Running AI enrichment...</p>";
-            try {
-              const enrichRes = await apiPost(`/v1/crm/organizations/${encodeURIComponent(accountId)}/enrich`, {});
-              const intel = enrichRes?.data?.intelligence;
-              if (!intel) { out.innerHTML = "<p>No AI insights returned.</p>"; return; }
-              out.innerHTML = `
-                <div class="cios-grid cios-grid-2">
-                  <article class="cios-card">
-                    <h3>AI Score</h3>
-                    <p><strong>Overall:</strong> ${scoreBadge(intel.score.overallScore)}</p>
-                    <p><strong>Fit:</strong> ${scoreBadge(intel.score.fitScore)}</p>
-                    <p><strong>Timing:</strong> ${scoreBadge(intel.score.timingScore)}</p>
-                    <p><strong>Risk:</strong> ${scoreBadge(intel.score.riskScore)}</p>
-                    <p><em>${intel.score.reasoning}</em></p>
-                  </article>
-                  <article class="cios-card">
-                    <h3>Risk &amp; Action</h3>
-                    <p><strong>Risk Level:</strong> ${riskBadge(intel.risk.riskLevel)}</p>
-                    <p><strong>Safe to Act:</strong> ${intel.risk.safeToAct ? "Yes" : "No"}</p>
-                    <p><strong>Flags:</strong> ${intel.risk.flags.length ? intel.risk.flags.join(", ") : "None"}</p>
-                    <p><strong>Recommended:</strong> ${intel.action.title} (${intel.action.priority})</p>
-                    <p>${intel.action.body}</p>
-                  </article>
-                </div>
-                <h4 style="margin-top:1rem;">Detected Signals</h4>
-                <table class="cios-table"><thead><tr><th>Type</th><th>Title</th><th>Confidence</th><th>Impact</th></tr></thead><tbody>
-                  ${(intel.signals || []).map(s => `<tr><td>${s.type}</td><td>${s.title}</td><td>${s.confidence}%</td><td>${s.impact}</td></tr>`).join("")}
-                </tbody></table>
-              `;
-            } catch (e) {
-              out.innerHTML = `<p>AI enrichment failed: ${e.message}</p>`;
-            }
-          });
-
-          document.getElementById("analyze-btn").addEventListener("click", async () => {
-            const text = document.getElementById("website-text").value.trim();
-            const out = document.getElementById("website-analysis");
-            if (!text) { out.innerHTML = "<p>Please paste website text first.</p>"; return; }
-            out.innerHTML = "<p>Analyzing with AI...</p>";
-            try {
-              const analysisRes = await apiPost(`/v1/crm/organizations/${encodeURIComponent(accountId)}/analyze-website`, { websiteText: text });
-              const a = analysisRes?.data?.analysis;
-              if (!a) { out.innerHTML = "<p>No analysis returned.</p>"; return; }
-              out.innerHTML = `
-                <div class="cios-grid cios-grid-2">
-                  <article class="cios-card">
-                    <h3>AI Score</h3>
-                    <p><strong>Overall:</strong> ${scoreBadge(a.score.overallScore)}</p>
-                    <p><strong>Fit:</strong> ${scoreBadge(a.score.fitScore)}</p>
-                    <p><strong>Timing:</strong> ${scoreBadge(a.score.timingScore)}</p>
-                  </article>
-                  <article class="cios-card">
-                    <h3>Risk &amp; Action</h3>
-                    <p><strong>Risk:</strong> ${riskBadge(a.risk.riskLevel)}</p>
-                    <p><strong>Safe to Act:</strong> ${a.risk.safeToAct ? "Yes" : "No"}</p>
-                    <p><strong>Action:</strong> ${a.action.title} (${a.action.priority})</p>
-                  </article>
-                </div>
-                <h4 style="margin-top:1rem;">Signals from Website</h4>
-                <table class="cios-table"><thead><tr><th>Type</th><th>Title</th><th>Confidence</th><th>Impact</th></tr></thead><tbody>
-                  ${(a.signals || []).map(s => `<tr><td>${s.type}</td><td>${s.title}</td><td>${s.confidence}%</td><td>${s.impact}</td></tr>`).join("")}
-                </tbody></table>
-              `;
-            } catch (e) {
-              out.innerHTML = `<p>Analysis failed: ${e.message}</p>`;
-            }
-          });
         } catch {
           renderEmpty(container, "Could not load account detail.");
         }

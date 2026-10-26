@@ -25,7 +25,8 @@
       </main>
     </div>
     <script type="module">
-      import { renderSidebar, apiGet, renderEmpty, scoreBadge, riskBadge, bindLogout } from "/js/app-shell.js";
+      import { renderSidebar, apiGet, renderEmpty, scoreBadge, riskBadge, bindLogout, requireAuth, unwrapList } from "/js/app-shell.js";
+      requireAuth();
       renderSidebar("/app/priorities/");
       bindLogout();
 
@@ -33,7 +34,7 @@
         const container = document.getElementById("priorities-table");
         try {
           const res = await apiGet("/v1/crm/organizations");
-          const orgs = (res?.data?.organizations ?? [])
+          const orgs = unwrapList(res, ["organizations"])
             .filter(o => o.fitScore >= 60)
             .sort((a, b) => b.fitScore - a.fitScore);
           if (orgs.length === 0) {
