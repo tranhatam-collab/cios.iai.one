@@ -108,7 +108,7 @@ jobs:
 
   deploy-pages:
     name: Deploy Cloudflare Pages
-    needs: [build-test, smoke-workers-readonly, deploy-workers]
+    needs: [build-test, smoke-workers-readonly]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     permissions:
