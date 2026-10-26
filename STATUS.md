@@ -5,9 +5,9 @@
 **Updated:** 2026-10-26  
 **Verdict:** R1 **LIVE** on Workers+Pages (account `f3f9…`); CI+CD xanh trên `main`; ecosystem handoff still not whole-system `GO`
 
-**RC:** `main@e066838` (CI/CD green run [40338919524](https://github.com/tranhatam-collab/cios.iai.one/actions/runs/40338919524))  
-**Worker version:** `b9fbd314-38b2-496b-9ade-0d8998a45098`  
-**Pages deployment:** `https://400e9d36.cios-iai-one-3ai.pages.dev` → `https://cios.iai.one`
+**RC:** `main@e56bdd3` (CI/CD green run [40339746459](https://github.com/tranhatam-collab/cios.iai.one/actions/runs/40339746459); prior green `e066838`/`40338919524`)  
+**Worker version:** `649de2f0-5737-4cd1-91f8-f08c6f8bcd7b`  
+**Pages deployment:** `https://a9de5b66.cios-iai-one-3ai.pages.dev` → `https://cios.iai.one`
 
 ## Canonical API
 
@@ -53,7 +53,7 @@ GitHub Actions: `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` + `SMOKE_WORKER
 
 - Triggers: `push` + `workflow_dispatch`
 - Jobs: `build-test` → `Smoke Workers Readonly` → parallel `Deploy Cloudflare Workers API` + `Deploy Cloudflare Pages`
-- Receipt `e066838` / run `40338919524`: all four jobs **success** (2026-10-26)
+- Receipt `e56bdd3` / run `40339746459` (and `e066838` / `40338919524`): all four jobs **success** (2026-10-26)
 - Post-deploy live: `/health` + `/v1/system/health` 200; product reads 401 without JWT; `POST /v1/auth/session` validates; homepage honesty OK
 
 ## Open / R2
