@@ -1,9 +1,9 @@
 const ALLOWED_HEADERS = "Authorization, Content-Type, Idempotency-Key, x-trace-id";
 
+// cios-iai-one.pages.dev belongs to the decommissioned Pages project on another account; never allow it.
 const ALLOWED_ORIGINS = new Set([
   "https://cios.iai.one",
   "https://www.cios.iai.one",
-  "https://cios-iai-one.pages.dev",
   "https://cios-iai-one-3ai.pages.dev",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -15,7 +15,6 @@ function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
   if (ALLOWED_ORIGINS.has(origin)) return true;
   // Cloudflare Pages preview deployments for this project
-  if (/^https:\/\/[a-z0-9-]+\.cios-iai-one\.pages\.dev$/i.test(origin)) return true;
   if (/^https:\/\/[a-z0-9-]+\.cios-iai-one-3ai\.pages\.dev$/i.test(origin)) return true;
   return false;
 }

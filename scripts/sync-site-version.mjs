@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { env } from "node:process";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -9,6 +10,8 @@ const payload = {
   name: pkg.name,
   version: pkg.version,
   apiCompat: "v1",
+  // GITHUB_SHA is set in Actions; post-deploy smoke compares it with the live version.json.
+  commit: env.GITHUB_SHA ?? null,
   generatedAt: new Date().toISOString(),
   policy: "each_release_is_a_complete_superset"
 };

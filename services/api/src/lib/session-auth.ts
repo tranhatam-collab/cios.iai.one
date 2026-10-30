@@ -351,7 +351,8 @@ export async function handleMeta(env: WorkerEnv, traceId: string): Promise<Respo
         version: "0.3.0",
         apiCompat: "v1",
         environment: "workers",
-        contract: env.API_CONTRACT ?? "phase2-workers-v1"
+        contract: env.API_CONTRACT ?? "phase2-workers-v1",
+        commit: env.GIT_SHA ?? null
       },
       capabilities: {
         auth: true,

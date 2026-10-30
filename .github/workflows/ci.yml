@@ -11,6 +11,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Production Cloudflare account that owns cios.iai.one (Founder-confirmed 2026-10-27).
+  # Deploy jobs refuse to run against any other account.
+  CLOUDFLARE_ACCOUNT_LOCK: f3f9e76222dcb488d5e303e29e8ba192
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
@@ -21,9 +26,16 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            services/api/package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install Workers dependencies
+        working-directory: services/api
+        run: npm ci --legacy-peer-deps
 
       - name: Typecheck
         run: npm run typecheck
@@ -33,6 +45,10 @@ jobs:
           SESSION_SECRET: ci-session-secret-at-least-32
           AIAGENT_API_URL: https://api.aiagent.iai.one
           FRONTEND_URL: https://cios.iai.one
+
+      - name: Typecheck Workers API
+        working-directory: services/api
+        run: npm run typecheck
 
       - name: Build
         run: npm run build
@@ -52,12 +68,13 @@ jobs:
           FRONTEND_URL: https://cios.iai.one
           LOG_LEVEL: silent
 
-  smoke-workers-readonly:
-    name: Smoke Workers Readonly
+  # Production deploys only from main; dev and pull requests stop at build-test.
+  deploy-workers:
+    name: Deploy Cloudflare Workers API
     needs: build-test
     if: >
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+      github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,54 +85,36 @@ jobs:
         with:
           node-version: "22"
           cache: npm
+          cache-dependency-path: services/api/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Smoke workers (read-only)
-        run: npm run smoke:workers:readonly
+      - name: Verify Cloudflare account lock
+        run: |
+          ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          if [ "$ACCOUNT_ID" != "$CLOUDFLARE_ACCOUNT_LOCK" ]; then
+            echo "::error::secrets.CLOUDFLARE_ACCOUNT_ID is not the production account lock (${CLOUDFLARE_ACCOUNT_LOCK})."
+            exit 1
+          fi
         env:
-          WORKERS_API_URL: ${{ secrets.SMOKE_WORKERS_API_URL }}
-
-  deploy-workers:
-    name: Deploy Cloudflare Workers API
-    needs: [build-test, smoke-workers-readonly]
-    if: >
-      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Install Workers dependencies
         working-directory: services/api
         run: npm ci --legacy-peer-deps
 
+      # GIT_SHA lets post-deploy smoke confirm the edge serves this exact commit (/v1/meta release.commit).
       - name: Deploy Workers API
         working-directory: services/api
-        run: npx wrangler deploy
+        run: npx wrangler deploy --var "GIT_SHA:${GITHUB_SHA}"
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Post-deploy Workers health
-        run: |
-          curl -fsS --retry 5 --retry-delay 3 \
-            "https://cios-workers-api.tranhatam.workers.dev/v1/system/health" | grep -q '"status":"healthy"'
-
   deploy-pages:
     name: Deploy Cloudflare Pages
-    needs: [build-test, smoke-workers-readonly]
+    needs: build-test
     if: >
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+      github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -127,6 +126,7 @@ jobs:
         with:
           node-version: "22"
 
+      # Writes site/version.json including commit=GITHUB_SHA for the post-deploy version check.
       - name: Sync site version manifest
         run: node scripts/sync-site-version.mjs
 
@@ -140,8 +140,8 @@ jobs:
             exit 1
           fi
           ACCOUNT_ID="$(python3 -c "import os; print(os.environ['CLOUDFLARE_ACCOUNT_ID'].strip())")"
-          if [ -z "$ACCOUNT_ID" ]; then
-            echo "::error::CLOUDFLARE_ACCOUNT_ID is empty. Set secrets.CLOUDFLARE_ACCOUNT_ID to f3f9… account."
+          if [ "$ACCOUNT_ID" != "$CLOUDFLARE_ACCOUNT_LOCK" ]; then
+            echo "::error::secrets.CLOUDFLARE_ACCOUNT_ID is not the production account lock (${CLOUDFLARE_ACCOUNT_LOCK})."
             exit 1
           fi
           code=$(curl -sS -o /dev/null -w "%{http_code}" \
@@ -159,9 +159,41 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
-      - name: Smoke test (production Pages URL)
-        run: |
-          curl -fsS --retry 5 --retry-delay 4 --retry-all-errors \
-            "https://cios.iai.one/" | grep -q "Hệ điều hành trí tuệ khách hàng"
-          curl -fsS --retry 5 --retry-delay 2 \
-            "https://cios.iai.one/" | grep -qv "Day 7 Product Front"
+  # Post-deploy smoke runs against what was just deployed and fails unless the edge serves this commit.
+  smoke-workers:
+    name: Smoke Workers (post-deploy)
+    needs: deploy-workers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Smoke workers (read-only, expects this commit)
+        run: npm run smoke:workers:readonly
+        env:
+          WORKERS_API_URL: ${{ secrets.SMOKE_WORKERS_API_URL }}
+          EXPECTED_COMMIT: ${{ github.sha }}
+
+  smoke-pages:
+    name: Smoke Pages (post-deploy)
+    needs: deploy-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Smoke production Pages (expects this commit)
+        run: npm run smoke:pages
+        env:
+          PAGES_SITE_URL: https://cios.iai.one
+          EXPECTED_COMMIT: ${{ github.sha }}

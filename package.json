@@ -17,6 +17,7 @@
     "smoke:workers": "bash scripts/smoke-workers-e2e.sh",
     "smoke:workers:readonly": "bash scripts/smoke-workers-e2e.sh --read-only",
     "smoke:workers:strict": "bash scripts/smoke-workers-e2e.sh --strict",
+    "smoke:pages": "bash scripts/smoke-pages.sh",
     "deploy:workers": "bash scripts/deploy-workers-api.sh",
     "deploy:workers:dry-run": "SKIP_DEPLOY=1 bash scripts/deploy-workers-api.sh",
     "predeploy:pages": "npm run sync:site-version",

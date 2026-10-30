@@ -14,6 +14,10 @@ fi
 API_BASE_URL="${WORKERS_API_URL:-https://cios-workers-api.tranhatam.workers.dev}"
 STRICT_MODE="false"
 READ_ONLY_MODE="false"
+# Post-deploy: the commit the edge must serve (/v1/meta release.commit); empty skips the check.
+EXPECTED_COMMIT="${EXPECTED_COMMIT:-}"
+VERSION_RETRIES="${SMOKE_VERSION_RETRIES:-10}"
+VERSION_RETRY_DELAY="${SMOKE_VERSION_RETRY_DELAY:-3}"
 
 case "${1:-}" in
   --strict) STRICT_MODE="true" ;;
@@ -27,6 +31,61 @@ fi
 
 HEALTH_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/system/health")"
 META_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/meta")"
+
+# Wait until the edge serves the expected build; a green health check alone can come from the old version.
+if [ -n "$EXPECTED_COMMIT" ]; then
+  attempt=1
+  while :; do
+    LIVE_COMMIT="$(
+      node -e '
+        try {
+          const meta = JSON.parse(process.argv[1] || "{}");
+          process.stdout.write(String(meta?.data?.release?.commit ?? ""));
+        } catch {}
+      ' "$META_RESPONSE"
+    )"
+    if [ "$LIVE_COMMIT" = "$EXPECTED_COMMIT" ]; then
+      break
+    fi
+    if [ "$attempt" -ge "$VERSION_RETRIES" ]; then
+      printf 'READ_ONLY_CHECK_FAILED: live commit "%s" != expected "%s"\n' "$LIVE_COMMIT" "$EXPECTED_COMMIT" >&2
+      exit 1
+    fi
+    attempt=$((attempt + 1))
+    sleep "$VERSION_RETRY_DELAY"
+    META_RESPONSE="$(curl -sS "${API_BASE_URL}/v1/meta")"
+  done
+fi
+
+expect_status() {
+  local expected="$1" label="$2"
+  shift 2
+  local actual
+  actual="$(curl -sS -o /dev/null -w '%{http_code}' "$@")"
+  if [ "$actual" != "$expected" ]; then
+    printf 'READ_ONLY_CHECK_FAILED: %s returned HTTP %s (expected %s)\n' "$label" "$actual" "$expected" >&2
+    exit 1
+  fi
+}
+
+# No-side-effect contract probes: protected reads need a JWT, unknown routes 404,
+# and session validation runs (a 500 here usually means JWT_SECRET is missing).
+expect_status 401 "GET /v1/auth/me without JWT" "${API_BASE_URL}/v1/auth/me"
+expect_status 401 "GET /v1/bootstrap without JWT" "${API_BASE_URL}/v1/bootstrap"
+expect_status 404 "GET unknown route" "${API_BASE_URL}/v1/__smoke_unknown_route"
+expect_status 400 "POST /v1/auth/session with empty body" \
+  -X POST "${API_BASE_URL}/v1/auth/session" -H "Content-Type: application/json" -d '{}'
+
+SMOKE_FOREIGN_ORIGIN="https://smoke-disallowed.example"
+CORS_ALLOW_ORIGIN="$(
+  curl -sS -o /dev/null -D - -X OPTIONS "${API_BASE_URL}/v1/meta" \
+    -H "Origin: ${SMOKE_FOREIGN_ORIGIN}" -H "Access-Control-Request-Method: GET" |
+    tr -d '\r' | awk -F': ' 'tolower($1) == "access-control-allow-origin" { print $2 }'
+)"
+if [ "$CORS_ALLOW_ORIGIN" = "$SMOKE_FOREIGN_ORIGIN" ] || [ "$CORS_ALLOW_ORIGIN" = "*" ]; then
+  printf 'READ_ONLY_CHECK_FAILED: CORS allows foreign origin (%s)\n' "$CORS_ALLOW_ORIGIN" >&2
+  exit 1
+fi
 
 node -e '
   const health = JSON.parse(process.argv[1] || "{}");
