@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Signals — intelligence signals and evidence." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Signals — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div><button id="logout-btn" class="cios-btn">Log out</button></div>
+      </header>
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Signals</h1>
+        <div id="signals-table"></div>
+      </main>
+    </div>
+    <script type="module">
+      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout } from "/js/app-shell.js";
+      renderSidebar("/app/signals/");
+      bindLogout();
+
+      async function loadSignals() {
+        const container = document.getElementById("signals-table");
+        try {
+          const res = await apiGet("/v1/discovery/sources");
+          const sigs = res?.data?.queue ?? [];
+          if (sigs.length === 0) {
+            renderEmpty(container, "No signals yet. Import companies or wait for detection.");
+            return;
+          }
+          container.innerHTML = `<table class="cios-table"><thead><tr><th>Type</th><th>Source</th><th>Confidence</th><th>Risk</th><th>First seen</th></tr></thead><tbody>` +
+            sigs.map(s =>
+              `<tr><td>${s.sourceType}</td><td><a href="${s.sourceUrl}" target="_blank" rel="noopener">${s.sourceUrl}</a></td><td>${s.preliminaryConfidence}%</td><td>${s.riskLevel}</td><td>${formatDate(s.firstSeenAt)}</td></tr>`
+            ).join("") + `</tbody></table>`;
+        } catch {
+          renderEmpty(container, "Could not load signals.");
+        }
+      }
+      loadSignals();
+    </script>
+  </body>
+</html>

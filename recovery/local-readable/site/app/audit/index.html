@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS Audit — activity and compliance log." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>Audit — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div><button id="logout-btn" class="cios-btn">Log out</button></div>
+      </header>
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Audit Log</h1>
+        <div id="audit-table"></div>
+      </main>
+    </div>
+    <script type="module">
+      import { renderSidebar, apiGet, renderEmpty, formatDate, bindLogout } from "/js/app-shell.js";
+      renderSidebar("/app/audit/");
+      bindLogout();
+
+      async function loadAudit() {
+        const container = document.getElementById("audit-table");
+        try {
+          const res = await apiGet("/v1/compliance/audit");
+          const logs = res?.data?.audit ?? [];
+          if (logs.length === 0) {
+            renderEmpty(container, "No audit events yet.");
+            return;
+          }
+          container.innerHTML = `<table class="cios-table"><thead><tr><th>Time</th><th>Actor</th><th>Type</th><th>Message</th></tr></thead><tbody>` +
+            logs.map(l =>
+              `<tr><td>${formatDate(l.at)}</td><td>${l.actor}</td><td>${l.type}</td><td>${l.message}</td></tr>`
+            ).join("") + `</tbody></table>`;
+        } catch {
+          renderEmpty(container, "Could not load audit log.");
+        }
+      }
+      loadAudit();
+    </script>
+  </body>
+</html>

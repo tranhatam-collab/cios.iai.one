@@ -1,0 +1,24 @@
+name = "cios-workers-api"
+main = "src/worker.ts"
+compatibility_date = "2026-03-30"
+
+[observability]
+enabled = true
+
+[vars]
+API_CONTRACT = "phase2-workers-v1"
+JWT_ISSUER = "cios.iai.one"
+JWT_AUDIENCE = "cios-workers-api"
+AUTH_DEMO_EMAIL = "admin@iai.one"
+# AUTH_DEMO_PASSWORD — optional wrangler secret (defaults to demo123456 in worker)
+# JWT_SECRET — set via: npx wrangler secret put JWT_SECRET
+
+[[d1_databases]]
+binding = "CIOS_DB"
+database_name = "cios-workers-api-db"
+database_id = "d4f3a44d-8f6e-4344-8679-749123c7aa33"
+
+# KV optional — uncomment after: npx wrangler kv namespace create CIOS_KV
+# [[kv_namespaces]]
+# binding = "CIOS_KV"
+# id = "REPLACE_WITH_NEW_KV_ID"

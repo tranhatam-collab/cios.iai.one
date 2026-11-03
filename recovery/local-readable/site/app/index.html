@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="CIOS App — Daily account priority briefing." />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <title>App — CIOS</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <div class="cios-app-shell">
+      <aside class="cios-sidebar" aria-label="App navigation"></aside>
+
+      <header class="cios-topbar">
+        <div><strong>CIOS App</strong></div>
+        <div>
+          <button id="logout-btn" class="cios-btn">Log out</button>
+        </div>
+      </header>
+
+      <main class="cios-app-main" id="main">
+        <h1 class="cios-page-title">Dashboard</h1>
+
+        <section class="cios-grid cios-grid-3" aria-label="Overview cards">
+          <article class="cios-card">
+            <h3>Top Accounts</h3>
+            <div id="dash-accounts"></div>
+          </article>
+          <article class="cios-card">
+            <h3>New Signals</h3>
+            <div id="dash-signals"></div>
+          </article>
+          <article class="cios-card">
+            <h3>Risk Warnings</h3>
+            <div id="dash-risk"></div>
+          </article>
+        </section>
+
+        <section class="cios-story-block" style="margin-top:1.5rem;">
+          <h2>Priorities Today</h2>
+          <div id="dash-priorities"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import {
+        renderSidebar,
+        apiGet,
+        renderEmpty,
+        formatDate,
+        scoreBadge,
+        riskBadge,
+        bindLogout,
+        requireAuth,
+      } from "/js/app-shell.js";
+
+      requireAuth();
+      renderSidebar("/app/");
+      bindLogout();
+
+      async function loadDashboard() {
+        const accountsEl = document.getElementById("dash-accounts");
+        const signalsEl = document.getElementById("dash-signals");
+        const riskEl = document.getElementById("dash-risk");
+        const prioritiesEl = document.getElementById("dash-priorities");
+
+        try {
+          const orgsRes = await apiGet("/v1/crm/organizations");
+          const orgs = orgsRes?.data?.organizations ?? [];
+          if (orgs.length === 0) {
+            renderEmpty(accountsEl, "No accounts yet. Import or add companies.");
+          } else {
+            accountsEl.innerHTML = `<table class="cios-table"><thead><tr><th>Name</th><th>Score</th><th>Stage</th></tr></thead><tbody>` +
+              orgs.slice(0, 5).map(o =>
+                `<tr><td><a href="/app/accounts/detail.html?id=${encodeURIComponent(o.id)}">${o.name}</a></td><td>${scoreBadge(o.fitScore)}</td><td>${o.stage}</td></tr>`
+              ).join("") + `</tbody></table>`;
+          }
+        } catch {
+          renderEmpty(accountsEl, "Could not load accounts.");
+        }
+
+        try {
+          const sigRes = await apiGet("/v1/discovery/sources");
+          const sigs = sigRes?.data?.queue ?? [];
+          if (sigs.length === 0) {
+            renderEmpty(signalsEl, "No signals yet.");
+          } else {
+            signalsEl.innerHTML = `<table class="cios-table"><thead><tr><th>Source</th><th>Type</th><th>Confidence</th></tr></thead><tbody>` +
+              sigs.slice(0, 5).map(s =>
+                `<tr><td>${s.sourceUrl}</td><td>${s.sourceType}</td><td>${s.preliminaryConfidence}%</td></tr>`
+              ).join("") + `</tbody></table>`;
+          }
+        } catch {
+          renderEmpty(signalsEl, "Could not load signals.");
+        }
+
+        try {
+          const sigs = (await apiGet("/v1/discovery/sources"))?.data?.queue ?? [];
+          const risks = sigs.filter(s => s.riskLevel && s.riskLevel.toLowerCase() !== "low");
+          if (risks.length === 0) {
+            renderEmpty(riskEl, "No risk warnings.");
+          } else {
+            riskEl.innerHTML = `<ul class="cios-policy-list">` +
+              risks.slice(0, 5).map(r =>
+                `<li>${r.sourceUrl} — ${riskBadge(r.riskLevel)}</li>`
+              ).join("") + `</ul>`;
+          }
+        } catch {
+          renderEmpty(riskEl, "Could not load risk data.");
+        }
+
+        try {
+          const orgs = (await apiGet("/v1/crm/organizations"))?.data?.organizations ?? [];
+          const prioritized = orgs
+            .filter(o => o.fitScore >= 60)
+            .sort((a, b) => b.fitScore - a.fitScore)
+            .slice(0, 5);
+          if (prioritized.length === 0) {
+            renderEmpty(prioritiesEl, "No priorities yet. Build your account list first.");
+          } else {
+            prioritiesEl.innerHTML = `<table class="cios-table"><thead><tr><th>Rank</th><th>Company</th><th>Reason</th><th>Score</th><th>Risk</th><th>Action</th></tr></thead><tbody>` +
+              prioritized.map((o, i) =>
+                `<tr><td>${i + 1}</td><td><a href="/app/accounts/detail.html?id=${encodeURIComponent(o.id)}">${o.name}</a></td><td>Fit score high</td><td>${scoreBadge(o.fitScore)}</td><td>${riskBadge("low")}</td><td><a href="/app/actions/">Act</a></td></tr>`
+              ).join("") + `</tbody></table>`;
+          }
+        } catch {
+          renderEmpty(prioritiesEl, "Could not load priorities.");
+        }
+      }
+
+      loadDashboard();
+    </script>
+  </body>
+</html>

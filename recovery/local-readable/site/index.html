@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0c1324" />
+    <meta
+      name="description"
+      content="CIOS là Customer Intelligence Operating System giúp tổ chức tìm đúng công ty, hiểu đúng tín hiệu, kiểm tra mức độ an toàn và quyết định bước tiếp theo."
+    />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;700;800&family=Sora:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>CIOS - Customer Intelligence Operating System</title>
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+  </head>
+  <body data-page="home">
+    <a class="cios-skip" href="#main" data-i18n="site.skip"
+      >Bỏ qua điều hướng</a
+    >
+
+    <div class="cios-app" data-app="cios-shell" data-api-compat="v1">
+      <header class="cios-header" role="banner">
+        <div class="cios-brand">
+          <strong>CIOS</strong>
+          <span data-i18n="header.tagline"
+            >Customer Intelligence Operating System</span
+          >
+        </div>
+        <div class="cios-header-right">
+          <button
+            class="cios-pill cios-lang-toggle"
+            type="button"
+            data-language-toggle
+            aria-label="Chuyển sang tiếng Anh / Switch to English"
+          >
+            🇻🇳 Tiếng Việt
+          </button>
+          <span class="cios-version" data-version-label title="">v--</span>
+        </div>
+      </header>
+
+      <main class="cios-main" id="main" role="main" tabindex="-1">
+        <section class="cios-hero" aria-labelledby="cios-hero-title">
+          <div class="cios-hero-copy">
+            <p class="cios-eyebrow" data-i18n="hero.eyebrow">
+              Trang sản phẩm sẵn sàng vận hành
+            </p>
+            <h1 id="cios-hero-title" data-i18n="hero.title">
+              Hệ điều hành trí tuệ khách hàng công khai cho thời đại AI.
+            </h1>
+            <p class="cios-copy-primary" data-i18n="hero.subtitle">
+              Tìm đúng công ty, hiểu đúng tín hiệu, kiểm soát đúng rủi ro, và
+              hành động đúng lúc trên cùng một lớp intelligence, compliance và
+              workflow control.
+            </p>
+            <p class="cios-one-line" data-i18n="hero.oneLine">
+              CIOS giúp tổ chức tìm đúng công ty, hiểu vì sao đáng chú ý, kiểm
+              tra có an toàn để hành động hay không, và biết bước tiếp theo cần
+              làm.
+            </p>
+            <div
+              class="cios-cta-group"
+              role="group"
+              aria-label="Hành động chính"
+            >
+              <a
+                class="cios-btn cios-btn-primary"
+                href="/app"
+                data-i18n="hero.primary"
+                >Mở ứng dụng</a
+              >
+              <a
+                class="cios-btn cios-btn-secondary"
+                href="/pricing"
+                data-i18n="nav.pricing"
+                >Bảng giá</a
+              >
+              <a
+                class="cios-btn cios-btn-secondary"
+                href="/docs"
+                data-i18n="hero.secondary"
+                >Xem kiến trúc hệ thống</a
+              >
+              <a
+                class="cios-btn cios-btn-ghost"
+                href="/charter"
+                data-i18n="hero.tertiary"
+                >Constitutional Layer</a
+              >
+            </div>
+          </div>
+
+          <aside
+            class="cios-hero-panel"
+            aria-label="Ảnh chụp trạng thái trực tiếp"
+          >
+            <article class="cios-panel-card">
+              <h2>Business Intelligence</h2>
+              <p>
+                <strong
+                  data-top-accounts
+                  data-i18n="home.panel.topAccounts.loading"
+                  >Đang tải tài khoản nổi bật hôm nay...</strong
+                >
+              </p>
+              <p class="cios-panel-meta">
+                Tín hiệu, độ tin cậy và ngữ cảnh có truy nguồn
+              </p>
+            </article>
+            <article class="cios-panel-card">
+              <h2>Compliance Status</h2>
+              <p>
+                <strong
+                  data-safe-actions
+                  data-i18n="home.panel.safeActions.loading"
+                  >Đang tải trạng thái hành động an toàn...</strong
+                >
+              </p>
+              <p class="cios-panel-meta">Kiểm tra policy trước khi hành động</p>
+            </article>
+            <article class="cios-panel-card">
+              <h2>Decision Queue</h2>
+              <p>
+                <strong
+                  data-pending-reviews
+                  data-i18n="home.panel.pendingReviews.loading"
+                  >Đang tải hàng đợi phê duyệt...</strong
+                >
+              </p>
+              <p class="cios-panel-meta">Allow, deny, hoặc review required</p>
+            </article>
+            <article class="cios-panel-card">
+              <h2>Workflow Status</h2>
+              <p>
+                <strong
+                  data-workflow-callbacks
+                  data-i18n="home.panel.workflow.loading"
+                  >Đang tải trạng thái workflow...</strong
+                >
+              </p>
+              <p class="cios-panel-meta">
+                Chuyển giao thực thi và callback trace
+              </p>
+            </article>
+          </aside>
+        </section>
+
+        <section class="cios-strip" aria-labelledby="cios-reality-title">
+          <h2 id="cios-reality-title" data-i18n="status.currentTitle">
+            Trạng thái hiện tại
+          </h2>
+          <p data-i18n="status.currentBody">
+            Shell PWA và các module nền đã hoạt động. Những bề mặt dữ liệu sống
+            như realtime, CRM, compliance và governance đang được nối dần vào
+            phiên bản vận hành thật.
+          </p>
+          <a
+            class="cios-inline-link"
+            href="/sprint"
+            data-i18n="status.currentCta"
+            >Xem sprint hiện tại</a
+          >
+        </section>
+
+        <section class="cios-section" aria-labelledby="cios-day7-title">
+          <h2 id="cios-day7-title">Day 7 Product Front</h2>
+          <p>
+            Homepage hiện đã dùng dữ liệu thật từ `GET /v1/overview` trên
+            Workers API để hiển thị top organizations, review queue và workflow
+            health.
+          </p>
+          <p>
+            App shell tại `/app` dùng `GET /v1/bootstrap` và `GET /v1/overview`
+            để hiển thị workspace context, permissions, surfaces và system
+            state.
+          </p>
+        </section>
+      
+<section hidden><h2>What should you do today?</h2></section>
+</main>
+
+      <nav class="cios-nav" role="navigation" aria-label="Điều hướng chính">
+        <a href="#main" aria-current="page" data-i18n="nav.home"
+          ><span class="cios-nav-icon" aria-hidden="true">⌂</span>Trang chủ</a
+        >
+        <a href="/app" data-i18n="nav.app"
+          ><span class="cios-nav-icon" aria-hidden="true">◎</span>Ứng dụng</a
+        >
+        <a href="/pricing" data-i18n="nav.pricing"
+          ><span class="cios-nav-icon" aria-hidden="true">◉</span>Bảng giá</a
+        >
+        <a href="/docs" data-i18n="nav.docs"
+          ><span class="cios-nav-icon" aria-hidden="true">◈</span>Tài liệu</a
+        >
+      </nav>
+    </div>
+
+    <script type="module">
+      import { loadHomepageStatus, loadVersionBadge } from "/js/app.js";
+
+      (async () => {
+        loadVersionBadge();
+        await loadHomepageStatus();
+      })();
+    </script>
+  </body>
+</html>
