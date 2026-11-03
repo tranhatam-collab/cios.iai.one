@@ -83,6 +83,7 @@ vitest.config.ts
 - Canonical remote base verification: `npm ci` PASS; `npm run typecheck` PASS; `npm run build` PASS; full Vitest suite 42/42 PASS; focused Worker R1 contract suite 10/10 PASS.
 - The focused suite includes registration tests proving caller-supplied `role:admin` and workspace selection are ignored by current source.
 - `npm ci` reported 26 dependency vulnerabilities: 1 critical, 9 high, 15 moderate, and 1 low. This remains a release blocker requiring dependency review.
+- GitHub reported 59 Dependabot findings on the default branch at push time: 1 critical, 26 high, 25 moderate, and 7 low. The registry and local audit counts have different scopes; neither is treated as a duplicate of the other.
 - No build or test result is claimed for the divergent snapshot itself because it is intentionally not applied to runtime paths.
 - No deployment, Cloudflare Worker mutation, DNS mutation, secret mutation, or database mutation was performed.
 - The current canonical `main` source contains remediations for the two previously reported auth risks: registration ignores caller-supplied role/workspace values, and demo seeding requires both `ALLOW_DEMO_SEED=true` and `AUTH_DEMO_PASSWORD`. Source evidence alone does not prove the live Worker is running this exact SHA or has safe secret values.
