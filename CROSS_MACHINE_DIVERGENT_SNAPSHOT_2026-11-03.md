@@ -88,3 +88,13 @@ vitest.config.ts
 - No deployment, Cloudflare Worker mutation, DNS mutation, secret mutation, or database mutation was performed.
 - The current canonical `main` source contains remediations for the two previously reported auth risks: registration ignores caller-supplied role/workspace values, and demo seeding requires both `ALLOW_DEMO_SEED=true` and `AUTH_DEMO_PASSWORD`. Source evidence alone does not prove the live Worker is running this exact SHA or has safe secret values.
 - This branch is not a release candidate. It is evidence for cross-machine audit and possible manual reconciliation only.
+
+## Addendum kiểm chứng độc lập ngày 2026-11-04
+
+Phần `Local HEAD relation to remote: UNVERIFIED` ở ảnh chụp 03/11 **không còn là trạng thái hiện tại**. Đọc lại remote `tranhatam-collab/cios.iai.one` cho thấy nhánh `wip/rescue-20261027-old-main` trỏ đúng `1b153d976c672705bd91095f12fbac2f5d0a4c80`; `git cat-file -t` trả `commit`. `main` vẫn ở `c0b350f1c04b930bd326b8ee4e19ed220c25b022` tại lượt kiểm này.
+
+Sau khi fetch hai ref vào clone kiểm toán, `git merge-base main wip/rescue` trả `be8a8ea1ba9edde3d3d2eaa6c6ae4215772465bd`; `git rev-list --left-right --count main...wip/rescue` trả `12 5` (12 commit chỉ ở main, 5 chỉ ở WIP). Hai nhánh đã **phân kỳ**, không phải WIP là bản mới nhất của main. Diff từ common ancestor tới WIP có 8 path gồm adapter AI và tests; đó không phải diff merge-ready với main. Cần review thực chất từng thay đổi và chạy test trên candidate hòa giải mới, không cherry-pick/merge tự động.
+
+Nhánh snapshot này vẫn chỉ bảo toàn 31 file local đọc được dưới `recovery/local-readable/`. Mười ba path không có trong local snapshot không được biến thành bằng chứng WIP hoàn chỉnh; nguồn canonical main và WIP branch trên remote phải được đối chiếu riêng. `STATUS.md` là receipt tháng 10, không chứng minh Worker/Pages đang chạy SHA này vào tháng 11. Lượt 04/11 chỉ kiểm Git/ancestry, **không** kiểm CI, Cloudflare runtime, auth/session, D1, secret, provider hay rollback. Production release giữ `HOLD` tới exact-SHA reconciliation, staging E2E, independent review và Founder authority.
+
+Máy mới: clone repo, checkout nhánh bàn giao addendum `OMCODE/cios-handoff-reconciled-20261104`, xác minh tip SHA và `git status --short`; fetch `main` cùng `wip/rescue-20261027-old-main` để lặp lại phép so. Không dùng `recovery/local-readable/` làm runtime source. `OMCODE/local-divergent-snapshot-20261103` được giữ nguyên như mốc lịch sử. Không deploy hoặc đổi dữ liệu trong việc bàn giao này.
