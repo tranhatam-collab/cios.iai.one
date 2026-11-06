@@ -9,6 +9,8 @@ export type WorkerEnv = {
   AUTH_DEMO_EMAIL?: string;
   AUTH_DEMO_PASSWORD?: string;
   ALLOW_DEMO_SEED?: string;
+  // Injected by CI at deploy (`wrangler deploy --var GIT_SHA:<sha>`); unset for local/manual deploys.
+  GIT_SHA?: string;
 };
 
 let initPromise: Promise<void> | null = null;

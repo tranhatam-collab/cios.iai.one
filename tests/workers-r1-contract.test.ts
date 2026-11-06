@@ -189,6 +189,16 @@ describe("Workers R1 contract", () => {
     }
   });
 
+  it("meta: release.commit reports the deployed GIT_SHA (null when unset)", async () => {
+    const deployed = await call(makeEnv({ GIT_SHA: "c0ffee1234" }), "GET", "/v1/meta");
+    expect(deployed.status).toBe(200);
+    const release = (deployed.json.data as { release: { commit: string | null } }).release;
+    expect(release.commit).toBe("c0ffee1234");
+
+    const local = await call(makeEnv(), "GET", "/v1/meta");
+    expect((local.json.data as { release: { commit: string | null } }).release.commit).toBeNull();
+  });
+
   it("CORS: disallowed origin is not reflected", async () => {
     const env = makeEnv();
     const request = new Request("https://cios-workers-api.test/v1/meta", {
@@ -199,6 +209,32 @@ describe("Workers R1 contract", () => {
     expect(response.headers.get("access-control-allow-origin")).not.toBe(
       "https://evil.example"
     );
+  });
+
+  it("CORS: old cios-iai-one.pages.dev origins are rejected; production Pages origins allowed", async () => {
+    const env = makeEnv();
+    const allowOrigin = async (origin: string) => {
+      const request = new Request("https://cios-workers-api.test/v1/meta", {
+        method: "OPTIONS",
+        headers: { origin, "access-control-request-method": "GET" }
+      });
+      return (await worker.fetch(request, env)).headers.get("access-control-allow-origin");
+    };
+
+    for (const origin of [
+      "https://cios-iai-one.pages.dev",
+      "https://08e0d3ec.cios-iai-one.pages.dev",
+      "https://main.cios-iai-one.pages.dev"
+    ]) {
+      expect(await allowOrigin(origin)).toBeNull();
+    }
+    for (const origin of [
+      "https://cios.iai.one",
+      "https://cios-iai-one-3ai.pages.dev",
+      "https://56a11a09.cios-iai-one-3ai.pages.dev"
+    ]) {
+      expect(await allowOrigin(origin)).toBe(origin);
+    }
   });
 
   it("tenant: register ignores client workspaceCode (no open join)", async () => {

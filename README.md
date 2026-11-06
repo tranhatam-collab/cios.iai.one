@@ -22,7 +22,7 @@ Enterprise intelligence product under the IAI ecosystem. Canonical API is Cloudf
 | AIAgent | `api.aiagent.iai.one` | R2 backlog |
 
 **Không dùng:** `cios-api.fly.dev` (DNS dead), Fly Fastify cho R1.  
-**Verdict:** xem `STATUS.md` (HOLD tới Founder GO trên handoff `*.iai.one`).
+**Verdict:** xem `STATUS.md` — R1 Founder GO 2026-10-27 tại `main@c0b350f`; handoff toàn hệ `*.iai.one` vẫn tách riêng.
 
 ---
 
@@ -37,8 +37,8 @@ cd services/api && npm ci && npm run typecheck
 
 ## Deploy + smoke
 
-- Không deploy production cho đến Founder GO trên `IAI_ONE_MASTER_HANDOFF…`
-- `npm run smoke:workers:readonly` (CI-safe)
+- Production deploy chỉ từ `main` qua CI (push `main` = deploy). Mỗi baseline mới cần Founder GO trước khi push (R1: GO 2026-10-27 @ `c0b350f`; xem `STATUS.md`)
+- `npm run smoke:workers:readonly` và `npm run smoke:pages` (read-only); đặt `EXPECTED_COMMIT=<sha>` để kiểm edge đang chạy đúng build
 - `docs/API_BACKEND_DEBUG_RUNBOOK.md`
 
 ## Structure
