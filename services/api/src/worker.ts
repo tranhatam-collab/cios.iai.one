@@ -338,6 +338,8 @@ async function handleRequest(request: Request, env: WorkerEnv): Promise<Response
         actor: auth.subject,
         role: auth.role,
         result: "success",
+        // The run is only validated and queued; nothing executes yet (see meta.status "stubbed").
+        details: { stubbed: true },
         traceId
       }, env);
       return ok(
@@ -372,6 +374,8 @@ async function handleRequest(request: Request, env: WorkerEnv): Promise<Response
         actor: auth.subject,
         role: auth.role,
         result: "success",
+        // The decision is validated but not persisted or enforced anywhere yet (see meta.status "stubbed").
+        details: { stubbed: true },
         traceId
       }, env);
       return ok(

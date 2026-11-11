@@ -5,10 +5,19 @@
 import { describe, expect, it } from "vitest";
 
 import worker from "../services/api/src/worker.ts";
+import { signHs256Jwt } from "../services/api/src/lib/jwt-sign.ts";
 import type { WorkerEnv } from "../services/api/src/lib/persistence.ts";
 
 const JWT_SECRET = "r1-test-jwt-secret-at-least-32-chars";
 const FLOW_SECRET = "r1-test-flow-webhook-secret";
+
+function tokenFor(role: string, expiresInSec = 3600): Promise<string> {
+  return signHs256Jwt(
+    { sub: `r1-${role}`, role, iss: "cios.iai.one", aud: "cios-workers-api" },
+    JWT_SECRET,
+    expiresInSec
+  );
+}
 
 function makeEnv(overrides: Partial<WorkerEnv> = {}): WorkerEnv {
   return {
@@ -268,5 +277,55 @@ describe("Workers R1 contract", () => {
     expect(enrich.status).toBe(501);
     const payment = await call(env, "GET", "/v1/payment/plans", { token });
     expect(payment.status).toBe(501);
+  });
+
+  it("limits: JSON bodies over 256 KB are refused with 413 before they are parsed", async () => {
+    const env = makeEnv();
+    const email = `r1_big_${crypto.randomUUID().slice(0, 8)}@example.com`;
+    const padding = "x".repeat(300 * 1024);
+
+    const login = await call(env, "POST", "/v1/auth/session", { body: { email, password: padding } });
+    expect(login.status).toBe(413);
+    expect((login.json.error as { code: string }).code).toBe("PAYLOAD_TOO_LARGE");
+
+    const register = await call(env, "POST", "/v1/auth/register", { body: { email, password: padding } });
+    expect(register.status).toBe(413);
+
+    await call(env, "POST", "/v1/auth/register", { body: { email, password: "password123" } });
+    const session = await call(env, "POST", "/v1/auth/session", { body: { email, password: "password123" } });
+    const token = (session.json.data as { token: string }).token;
+    const ingest = await call(env, "POST", "/v1/events/ingest", {
+      token,
+      headers: { "idempotency-key": `r1-big-${crypto.randomUUID()}` },
+      body: { source: "r1", event_type: "system.big", occurred_at: "2026-04-03T00:00:00.000Z", payload: { padding }, entity_refs: [] }
+    });
+    expect(ingest.status).toBe(413);
+
+    const small = await call(env, "POST", "/v1/auth/session", { body: { email, password: "password123" } });
+    expect(small.status).toBe(200);
+  });
+
+  it("authz: governor-only routes reject observers, operators and self-registered users", async () => {
+    const env = makeEnv();
+    const email = `r1_authz_${crypto.randomUUID().slice(0, 8)}@example.com`;
+    await call(env, "POST", "/v1/auth/register", { body: { email, password: "password123", role: "root" } });
+    const session = await call(env, "POST", "/v1/auth/session", { body: { email, password: "password123" } });
+    const registered = (session.json.data as { token: string }).token;
+
+    for (const token of [await tokenFor("observer"), await tokenFor("operator"), registered]) {
+      expect((await call(env, "GET", "/v1/governance/audit", { token })).status).toBe(403);
+      expect((await call(env, "GET", "/v1/flow/logs", { token })).status).toBe(403);
+    }
+    const governor = await tokenFor("governor");
+    expect((await call(env, "GET", "/v1/governance/audit", { token: governor })).status).toBe(200);
+    expect((await call(env, "GET", "/v1/flow/logs", { token: governor })).status).toBe(200);
+  });
+
+  it("authz: an expired token is rejected on every protected route", async () => {
+    const env = makeEnv();
+    const expired = await tokenFor("governor", -60);
+    expect((await call(env, "GET", "/v1/auth/me", { token: expired })).status).toBe(401);
+    expect((await call(env, "GET", "/v1/governance/audit", { token: expired })).status).toBe(401);
+    expect((await call(env, "GET", "/v1/bootstrap", { token: expired })).status).toBe(401);
   });
 });
