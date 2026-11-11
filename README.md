@@ -39,6 +39,8 @@ cd services/api && npm ci && npm run typecheck
 
 - Production deploy chỉ từ `main` qua CI (push `main` = deploy). Mỗi baseline mới cần Founder GO trước khi push (R1: GO 2026-10-27 @ `c0b350f`; xem `STATUS.md`)
 - `npm run smoke:workers:readonly` và `npm run smoke:pages` (read-only); đặt `EXPECTED_COMMIT=<sha>` để kiểm edge đang chạy đúng build
+- `npm run e2e:local`: E2E đầy đủ trên Worker thật (`wrangler dev` chế độ local) với D1 cục bộ, không chạm Cloudflare/production; cũng là một cổng của CI (`e2e-local`) trước khi deploy
+- Workflow `Credential health` (hằng tuần, chỉ GET) kiểm token Cloudflare của CI còn hợp lệ trước khi cần deploy
 - `docs/API_BACKEND_DEBUG_RUNBOOK.md`
 
 ## Structure
