@@ -6,6 +6,7 @@ import {
   type WorkerEnv
 } from "./persistence";
 import { requireAuth } from "./auth";
+import { payloadTooLarge, readJsonBody } from "./validation";
 
 type MemberRecord = {
   userId: string;
@@ -207,8 +208,9 @@ export async function handleAuthRegister(
   traceId: string
 ): Promise<Response> {
   await seedDemoUser(env);
-  const parsed = await request.json().catch(() => null);
-  const body = parseJsonRecord(parsed);
+  const read = await readJsonBody(request);
+  if ("tooLarge" in read) return payloadTooLarge(traceId);
+  const body = parseJsonRecord("value" in read ? read.value : null);
   if (!body) {
     return fail(400, "VALIDATION_FAILED", "Invalid register payload.", undefined, traceId);
   }
@@ -259,8 +261,9 @@ export async function handleAuthSession(
     return fail(500, "CONFIG_ERROR", "JWT_SECRET is not configured.", undefined, traceId);
   }
 
-  const parsed = await request.json().catch(() => null);
-  const body = parseJsonRecord(parsed);
+  const read = await readJsonBody(request);
+  if ("tooLarge" in read) return payloadTooLarge(traceId);
+  const body = parseJsonRecord("value" in read ? read.value : null);
   if (!body) {
     return fail(400, "VALIDATION_FAILED", "Invalid session payload.", undefined, traceId);
   }
