@@ -21,6 +21,13 @@ export type StoredRealtimeEvent = {
 
 const memoryEvents: StoredRealtimeEvent[] = [];
 
+// Publishers persist events fire-and-forget, so reads must wait for the writes still in flight.
+const pendingWrites = new Set<Promise<unknown>>();
+
+export async function flushPendingRealtimeWrites(): Promise<void> {
+  await Promise.allSettled([...pendingWrites]);
+}
+
 function mapRow(row: {
   event_id: string;
   workspace_id: string;
@@ -51,7 +58,21 @@ function mapRow(row: {
   };
 }
 
-export async function persistRealtimeEvent(input: {
+export type PersistRealtimeEventInput = Parameters<typeof writeRealtimeEvent>[0];
+
+export function persistRealtimeEvent(
+  input: PersistRealtimeEventInput,
+): Promise<StoredRealtimeEvent> {
+  const write = writeRealtimeEvent(input);
+  pendingWrites.add(write);
+  const settle = (): void => {
+    pendingWrites.delete(write);
+  };
+  write.then(settle, settle);
+  return write;
+}
+
+async function writeRealtimeEvent(input: {
   eventId?: string;
   workspaceId: string;
   eventType: string;
@@ -155,6 +176,7 @@ export async function listRealtimeEventsSince(params: {
   limit?: number;
 }): Promise<StoredRealtimeEvent[]> {
   const limit = Math.max(1, Math.min(params.limit ?? 200, 500));
+  await flushPendingRealtimeWrites();
   try {
     if (!params.afterEventId) {
       const result = await dbPool.query<{

@@ -62,16 +62,17 @@ async function verifyHs256Jwt(token: string, secret: string): Promise<Record<str
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [encodedHeader, encodedPayload, encodedSignature] = parts;
-  const headerBytes = base64UrlToBytes(encodedHeader);
-  const payloadBytes = base64UrlToBytes(encodedPayload);
   let header: Record<string, unknown>;
   let payload: Record<string, unknown>;
   try {
-    header = JSON.parse(new TextDecoder().decode(headerBytes)) as Record<string, unknown>;
-    payload = JSON.parse(new TextDecoder().decode(payloadBytes)) as Record<string, unknown>;
+    // Decoding sits inside the try: atob() throws on input that is not base64, and a throw here would surface as a 500.
+    header = JSON.parse(new TextDecoder().decode(base64UrlToBytes(encodedHeader))) as Record<string, unknown>;
+    payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(encodedPayload))) as Record<string, unknown>;
   } catch {
     return null;
   }
+  const isPlainObject = (value: unknown): boolean => typeof value === "object" && value !== null && !Array.isArray(value);
+  if (!isPlainObject(header) || !isPlainObject(payload)) return null;
   if (header.alg !== "HS256") return null;
   const key = await crypto.subtle.importKey(
     "raw",

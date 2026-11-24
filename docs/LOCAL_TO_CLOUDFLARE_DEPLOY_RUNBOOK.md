@@ -53,7 +53,7 @@ CLOUDFLARE_ACCOUNT_ID=<account_id> npm run deploy
 Sau deploy, kiem tra nhanh:
 
 ```bash
-curl -sS "https://cios-workers-api.tranhatam66.workers.dev/v1/system/health"
+curl -sS "https://cios-workers-api.tranhatam.workers.dev/v1/system/health"
 ```
 
 ---

@@ -97,7 +97,9 @@
             errorMsg.textContent = "Unexpected response.";
           }
         } catch (err) {
-          errorMsg.textContent = err?.message || "Network error. Please try again.";
+          // fetch() rejects with a TypeError ("Failed to fetch") when the API is unreachable; show a readable message instead.
+          errorMsg.textContent =
+            err instanceof TypeError ? "Network error. Please try again." : err?.message || "Request failed. Please try again.";
         }
       });
     </script>

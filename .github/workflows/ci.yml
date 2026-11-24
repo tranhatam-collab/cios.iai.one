@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main, dev]
+    # Docs-only pushes must not redeploy production.
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   pull_request:
     branches: [main, dev]
 
@@ -68,10 +72,31 @@ jobs:
           FRONTEND_URL: https://cios.iai.one
           LOG_LEVEL: silent
 
-  # Production deploys only from main; dev and pull requests stop at build-test.
+  # Real Worker runtime + local D1: covers auth, authorization, idempotency, CORS and restart persistence
+  # that the in-memory unit tests cannot (never talks to Cloudflare or production).
+  e2e-local:
+    name: E2E (Worker + local D1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: services/api/package-lock.json
+
+      - name: Install Workers dependencies
+        working-directory: services/api
+        run: npm ci --legacy-peer-deps
+
+      - name: Full-stack E2E
+        run: bash scripts/e2e-local.sh
+
+  # Production deploys only from main; dev and pull requests stop at build-test and e2e-local.
   deploy-workers:
     name: Deploy Cloudflare Workers API
-    needs: build-test
+    needs: [build-test, e2e-local]
     if: >
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main'
@@ -111,7 +136,7 @@ jobs:
 
   deploy-pages:
     name: Deploy Cloudflare Pages
-    needs: build-test
+    needs: [build-test, e2e-local]
     if: >
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main'
