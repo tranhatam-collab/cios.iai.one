@@ -24,10 +24,9 @@
 
         <section class="cios-story-block">
           <h2>Data &amp; Privacy</h2>
-          <p>You can export or delete your workspace data at any time.</p>
-          <button id="export-btn" class="cios-btn">Export workspace data</button>
-          <button id="delete-btn" class="cios-btn" style="margin-left:0.5rem;color:#991b1b;">Delete workspace data</button>
-          <pre id="settings-result" style="margin-top:1rem;background:#f3f4f6;padding:1rem;border-radius:0.5rem;font-size:0.85rem;"></pre>
+          <p>Self-service export and deletion are not available in R1. To request deletion of your data, use the <a href="/legal/deletion-request.html">deletion request process</a> (email cios@iai.one).</p>
+          <button id="export-btn" class="cios-btn" disabled title="Not available in R1">Export workspace data</button>
+          <button id="delete-btn" class="cios-btn" style="margin-left:0.5rem;" disabled title="Not available in R1">Delete workspace data</button>
         </section>
 
         <section class="cios-story-block">
@@ -39,8 +38,8 @@
 
         <section class="cios-story-block">
           <h2>Reset Demo Data</h2>
-          <p>Restore the original demo dataset for testing.</p>
-          <button id="reset-btn" class="cios-btn cios-btn-primary">Reset demo data</button>
+          <p>Demo reset is not available in R1.</p>
+          <button id="reset-btn" class="cios-btn" disabled title="Not available in R1">Reset demo data</button>
         </section>
       </main>
     </div>
@@ -50,7 +49,6 @@
       renderSidebar("/app/settings/");
       bindLogout();
 
-      const out = document.getElementById("settings-result");
       const payOut = document.getElementById("payment-result");
       const subInfo = document.getElementById("subscription-info");
       const plansList = document.getElementById("plans-list");
@@ -60,19 +58,8 @@
       plansList.innerHTML = `<p class="cios-muted">Stripe checkout arrives in R2.</p>`;
       if (payOut) payOut.textContent = "";
 
-      document.getElementById("export-btn").addEventListener("click", () => {
-        out.textContent = "Export request submitted. You will receive an email when ready.";
-      });
-      document.getElementById("delete-btn").addEventListener("click", () => {
-        if (confirm("This will delete all workspace data. Are you sure?")) {
-          out.textContent = "Deletion request submitted and logged.";
-        }
-      });
-      document.getElementById("reset-btn").addEventListener("click", () => {
-        if (confirm("Reset all data to demo defaults?")) {
-          out.textContent = "Demo reset completed. Refresh the app to see changes.";
-        }
-      });
+      // R1 has no export, delete or demo-reset endpoint, so those controls are disabled in the markup above.
+      // They used to print "request submitted" / "reset completed" without calling anything.
     </script>
   </body>
 </html>
