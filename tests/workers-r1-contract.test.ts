@@ -328,4 +328,29 @@ describe("Workers R1 contract", () => {
     expect((await call(env, "GET", "/v1/governance/audit", { token: expired })).status).toBe(401);
     expect((await call(env, "GET", "/v1/bootstrap", { token: expired })).status).toBe(401);
   });
+
+  it("authz: a malformed bearer token is a clean 401 that still carries the CORS headers, never a 500", async () => {
+    const env = makeEnv();
+    const origin = "http://127.0.0.1:3000";
+    const garbage = [
+      "bogus",
+      "bogus.token.value", // three parts, not base64: used to throw from atob() and surface as a 500
+      "%%%.%%%.%%%",
+      "eyJhbGciOiJIUzI1NiJ9.!!!.sig",
+      "bnVsbA.bnVsbA.sig", // header and payload decode to the JSON literal null
+      "W10.W10.sig", // header and payload decode to the JSON array []
+      "aaaa.bbbb.cccc",
+      "a.b",
+      "a.b.c.d",
+      "..",
+      "a..c"
+    ];
+    for (const token of garbage) {
+      for (const path of ["/v1/auth/me", "/v1/bootstrap", "/v1/governance/audit"]) {
+        const res = await call(env, "GET", path, { token, headers: { origin } });
+        expect(res.status, `${path} with bearer "${token}"`).toBe(401);
+        expect(res.response.headers.get("access-control-allow-origin"), `CORS on ${path} with bearer "${token}"`).toBe(origin);
+      }
+    }
+  });
 });

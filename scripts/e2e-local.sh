@@ -187,6 +187,13 @@ req GET /v1/auth/me "" "$(mint operator 3600 wrongkey)"; expect_code "token sign
 req GET /v1/auth/me "" "$(mint operator -60)"; expect_code "expired token" 401
 req GET /v1/auth/me "" ""; expect_code "no token" 401
 req GET /v1/auth/me "" "" -H "Authorization: Basic ${TOKEN}"; expect_code "wrong auth scheme" 401
+# A garbled bearer token must be a clean 401 that browsers can read (CORS headers present), never a 500:
+# before the fix "bogus.token.value" made atob() throw and the 500 carried no CORS headers.
+for junk in "bogus" "bogus.token.value" "%%%.%%%.%%%" "bnVsbA.bnVsbA.sig" "W10.W10.sig" "a.b.c.d"; do
+  req GET /v1/auth/me "" "${junk}" -H "Origin: http://127.0.0.1:3000"
+  expect_code "malformed bearer '${junk}' is a 401, not a 500" 401
+  if [ "$(hdr access-control-allow-origin)" = "http://127.0.0.1:3000" ]; then ok "  and that 401 still carries the CORS header"; else bad "  and that 401 still carries the CORS header" "no access-control-allow-origin on the response"; fi
+done
 
 section "authorization matrix"
 for p in /v1/bootstrap /v1/overview /v1/crm/organizations /v1/discovery/sources /v1/discovery/crawl-governance /v1/review/queue /v1/compliance/audit /v1/reports/hourly /v1/events/search /v1/governance/audit /v1/flow/logs; do
