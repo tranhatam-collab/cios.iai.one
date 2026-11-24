@@ -64,6 +64,19 @@ export function readApiError(payload, fallback = "Request failed.") {
   return fallback;
 }
 
+/**
+ * An authenticated call that comes back 401 means the stored token is expired, revoked or garbled.
+ * Drop it and go back to the sign-in page instead of leaving every view stuck on "Could not load ...".
+ * Calls made without a token (sign-in, register) are not affected: their 401 is a normal error message.
+ */
+function handleUnauthorized(res, token) {
+  if (res.status !== 401 || !token) return;
+  clearToken();
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    window.location.href = "/login/";
+  }
+}
+
 export async function apiGet(path) {
   const token = getToken();
   const res = await fetch(apiUrl(path), {
@@ -71,6 +84,7 @@ export async function apiGet(path) {
       ...(token ? { authorization: `Bearer ${token}` } : {}),
     },
   });
+  handleUnauthorized(res, token);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data?.ok === false) {
     const error = new Error(readApiError(data, `${res.status}: ${res.statusText}`));
@@ -90,6 +104,7 @@ export async function apiPost(path, body) {
     },
     body: JSON.stringify(body),
   });
+  handleUnauthorized(res, token);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data?.ok === false) {
     const error = new Error(readApiError(data, `${res.status}: ${res.statusText}`));
